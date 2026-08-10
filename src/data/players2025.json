@@ -1,0 +1,897 @@
+{
+  "source": "elboberto 2025 DefaultAuctionValues (Yahoo/ESPN/NFFC avg AAV, 10-team standard)",
+  "generated": "2026-08-10",
+  "players": [
+    {
+      "id": "p0",
+      "name": "Ja'Marr Chase",
+      "pos": "WR",
+      "yahoo": 69,
+      "espn": 66,
+      "nffc": 59,
+      "projected": 65
+    },
+    {
+      "id": "p1",
+      "name": "Bijan Robinson",
+      "pos": "RB",
+      "yahoo": 67,
+      "espn": 63,
+      "nffc": 54,
+      "projected": 61
+    },
+    {
+      "id": "p2",
+      "name": "Saquon Barkley",
+      "pos": "RB",
+      "yahoo": 66,
+      "espn": 63,
+      "nffc": 48,
+      "projected": 59
+    },
+    {
+      "id": "p3",
+      "name": "Jahmyr Gibbs",
+      "pos": "RB",
+      "yahoo": 64,
+      "espn": 61,
+      "nffc": 52,
+      "projected": 59
+    },
+    {
+      "id": "p4",
+      "name": "Justin Jefferson",
+      "pos": "WR",
+      "yahoo": 60,
+      "espn": 60,
+      "nffc": 50,
+      "projected": 57
+    },
+    {
+      "id": "p5",
+      "name": "CeeDee Lamb",
+      "pos": "WR",
+      "yahoo": 60,
+      "espn": 57,
+      "nffc": 51,
+      "projected": 56
+    },
+    {
+      "id": "p6",
+      "name": "Derrick Henry",
+      "pos": "RB",
+      "yahoo": 54,
+      "espn": 47,
+      "nffc": 38,
+      "projected": 46
+    },
+    {
+      "id": "p7",
+      "name": "Christian McCaffrey",
+      "pos": "RB",
+      "yahoo": 56,
+      "espn": 55,
+      "nffc": 44,
+      "projected": 52
+    },
+    {
+      "id": "p8",
+      "name": "Nico Collins",
+      "pos": "WR",
+      "yahoo": 53,
+      "espn": 47,
+      "nffc": 44,
+      "projected": 48
+    },
+    {
+      "id": "p9",
+      "name": "Ashton Jeanty",
+      "pos": "RB",
+      "yahoo": 51,
+      "espn": 50,
+      "nffc": 42,
+      "projected": 48
+    },
+    {
+      "id": "p10",
+      "name": "Amon-Ra St. Brown",
+      "pos": "WR",
+      "yahoo": 51,
+      "espn": 53,
+      "nffc": 43,
+      "projected": 49
+    },
+    {
+      "id": "p11",
+      "name": "Puka Nacua",
+      "pos": "WR",
+      "yahoo": 47,
+      "espn": 51,
+      "nffc": 43,
+      "projected": 47
+    },
+    {
+      "id": "p12",
+      "name": "Malik Nabers",
+      "pos": "WR",
+      "yahoo": 49,
+      "espn": 51,
+      "nffc": 45,
+      "projected": 48
+    },
+    {
+      "id": "p13",
+      "name": "Brian Thomas Jr.",
+      "pos": "WR",
+      "yahoo": 44,
+      "espn": 43,
+      "nffc": 44,
+      "projected": 44
+    },
+    {
+      "id": "p14",
+      "name": "De'Von Achane",
+      "pos": "RB",
+      "yahoo": 43,
+      "espn": 43,
+      "nffc": 40,
+      "projected": 42
+    },
+    {
+      "id": "p15",
+      "name": "Jonathan Taylor",
+      "pos": "RB",
+      "yahoo": 42,
+      "espn": 41,
+      "nffc": 32,
+      "projected": 38
+    },
+    {
+      "id": "p16",
+      "name": "Josh Jacobs",
+      "pos": "RB",
+      "yahoo": 42,
+      "espn": 40,
+      "nffc": 33,
+      "projected": 38
+    },
+    {
+      "id": "p17",
+      "name": "Bucky Irving",
+      "pos": "RB",
+      "yahoo": 39,
+      "espn": 37,
+      "nffc": 36,
+      "projected": 37
+    },
+    {
+      "id": "p18",
+      "name": "Drake London",
+      "pos": "WR",
+      "yahoo": 40,
+      "espn": 40,
+      "nffc": 43,
+      "projected": 41
+    },
+    {
+      "id": "p19",
+      "name": "Brock Bowers",
+      "pos": "TE",
+      "yahoo": 35,
+      "espn": 36,
+      "nffc": 32,
+      "projected": 34
+    },
+    {
+      "id": "p20",
+      "name": "A.J. Brown",
+      "pos": "WR",
+      "yahoo": 35,
+      "espn": 41,
+      "nffc": 33,
+      "projected": 36
+    },
+    {
+      "id": "p21",
+      "name": "Chase Brown",
+      "pos": "RB",
+      "yahoo": 36,
+      "espn": 36,
+      "nffc": 37,
+      "projected": 36
+    },
+    {
+      "id": "p22",
+      "name": "Kyren Williams",
+      "pos": "RB",
+      "yahoo": 33,
+      "espn": 31,
+      "nffc": 29,
+      "projected": 31
+    },
+    {
+      "id": "p23",
+      "name": "Ladd McConkey",
+      "pos": "WR",
+      "yahoo": 32,
+      "espn": 31,
+      "nffc": 37,
+      "projected": 33
+    },
+    {
+      "id": "p24",
+      "name": "Josh Allen",
+      "pos": "QB",
+      "yahoo": 30,
+      "espn": 37,
+      "nffc": 21,
+      "projected": 29
+    },
+    {
+      "id": "p25",
+      "name": "Lamar Jackson",
+      "pos": "QB",
+      "yahoo": 29,
+      "espn": 35,
+      "nffc": 22,
+      "projected": 29
+    },
+    {
+      "id": "p26",
+      "name": "Trey McBride",
+      "pos": "TE",
+      "yahoo": 29,
+      "espn": 31,
+      "nffc": 27,
+      "projected": 29
+    },
+    {
+      "id": "p27",
+      "name": "Tee Higgins",
+      "pos": "WR",
+      "yahoo": 24,
+      "espn": 30,
+      "nffc": 29,
+      "projected": 28
+    },
+    {
+      "id": "p28",
+      "name": "James Cook",
+      "pos": "RB",
+      "yahoo": 24,
+      "espn": 28,
+      "nffc": 22,
+      "projected": 25
+    },
+    {
+      "id": "p29",
+      "name": "Jayden Daniels",
+      "pos": "QB",
+      "yahoo": 24,
+      "espn": 30,
+      "nffc": 17,
+      "projected": 24
+    },
+    {
+      "id": "p30",
+      "name": "George Kittle",
+      "pos": "TE",
+      "yahoo": 24,
+      "espn": 22,
+      "nffc": 19,
+      "projected": 22
+    },
+    {
+      "id": "p31",
+      "name": "Jaxon Smith-Njigba",
+      "pos": "WR",
+      "yahoo": 23,
+      "espn": 23,
+      "nffc": 30,
+      "projected": 25
+    },
+    {
+      "id": "p32",
+      "name": "Omarion Hampton",
+      "pos": "RB",
+      "yahoo": 24,
+      "espn": 25,
+      "nffc": 25,
+      "projected": 25
+    },
+    {
+      "id": "p33",
+      "name": "Tyreek Hill",
+      "pos": "WR",
+      "yahoo": 20,
+      "espn": 30,
+      "nffc": 27,
+      "projected": 26
+    },
+    {
+      "id": "p34",
+      "name": "Breece Hall",
+      "pos": "RB",
+      "yahoo": 19,
+      "espn": 15,
+      "nffc": 27,
+      "projected": 20
+    },
+    {
+      "id": "p35",
+      "name": "Mike Evans",
+      "pos": "WR",
+      "yahoo": 19,
+      "espn": 19,
+      "nffc": 24,
+      "projected": 21
+    },
+    {
+      "id": "p36",
+      "name": "Garrett Wilson",
+      "pos": "WR",
+      "yahoo": 19,
+      "espn": 19,
+      "nffc": 31,
+      "projected": 23
+    },
+    {
+      "id": "p37",
+      "name": "Jalen Hurts",
+      "pos": "QB",
+      "yahoo": 19,
+      "espn": 29,
+      "nffc": 14,
+      "projected": 21
+    },
+    {
+      "id": "p38",
+      "name": "Chuba Hubbard",
+      "pos": "RB",
+      "yahoo": 17,
+      "espn": 19,
+      "nffc": 20,
+      "projected": 19
+    },
+    {
+      "id": "p39",
+      "name": "Marvin Harrison Jr.",
+      "pos": "WR",
+      "yahoo": 17,
+      "espn": 18,
+      "nffc": 27,
+      "projected": 21
+    },
+    {
+      "id": "p40",
+      "name": "Kenneth Walker III",
+      "pos": "RB",
+      "yahoo": 18,
+      "espn": 20,
+      "nffc": 23,
+      "projected": 20
+    },
+    {
+      "id": "p41",
+      "name": "Terry McLaurin",
+      "pos": "WR",
+      "yahoo": 16,
+      "espn": 22,
+      "nffc": 21,
+      "projected": 20
+    },
+    {
+      "id": "p42",
+      "name": "Davante Adams",
+      "pos": "WR",
+      "yahoo": 16,
+      "espn": 26,
+      "nffc": 25,
+      "projected": 22
+    },
+    {
+      "id": "p43",
+      "name": "Alvin Kamara",
+      "pos": "RB",
+      "yahoo": 16,
+      "espn": 21,
+      "nffc": 18,
+      "projected": 18
+    },
+    {
+      "id": "p44",
+      "name": "James Conner",
+      "pos": "RB",
+      "yahoo": 15,
+      "espn": 18,
+      "nffc": 14,
+      "projected": 16
+    },
+    {
+      "id": "p45",
+      "name": "Joe Burrow",
+      "pos": "QB",
+      "yahoo": 13,
+      "espn": 25,
+      "nffc": 18,
+      "projected": 19
+    },
+    {
+      "id": "p46",
+      "name": "DK Metcalf",
+      "pos": "WR",
+      "yahoo": 11,
+      "espn": 15,
+      "nffc": 22,
+      "projected": 16
+    },
+    {
+      "id": "p47",
+      "name": "RJ Harvey",
+      "pos": "RB",
+      "yahoo": 11,
+      "espn": 8,
+      "nffc": 18,
+      "projected": 12
+    },
+    {
+      "id": "p48",
+      "name": "Rashee Rice",
+      "pos": "WR",
+      "yahoo": 9,
+      "espn": 10,
+      "nffc": 20,
+      "projected": 13
+    },
+    {
+      "id": "p49",
+      "name": "Joe Mixon",
+      "pos": "RB",
+      "yahoo": 8,
+      "espn": 4,
+      "nffc": 7,
+      "projected": 6
+    },
+    {
+      "id": "p50",
+      "name": "Sam LaPorta",
+      "pos": "TE",
+      "yahoo": 9,
+      "espn": 11,
+      "nffc": 10,
+      "projected": 10
+    },
+    {
+      "id": "p51",
+      "name": "TreVeyon Henderson",
+      "pos": "RB",
+      "yahoo": 11,
+      "espn": 19,
+      "nffc": 19,
+      "projected": 16
+    },
+    {
+      "id": "p52",
+      "name": "David Montgomery",
+      "pos": "RB",
+      "yahoo": 8,
+      "espn": 9,
+      "nffc": 9,
+      "projected": 9
+    },
+    {
+      "id": "p53",
+      "name": "DJ Moore",
+      "pos": "WR",
+      "yahoo": 8,
+      "espn": 11,
+      "nffc": 21,
+      "projected": 13
+    },
+    {
+      "id": "p54",
+      "name": "DeVonta Smith",
+      "pos": "WR",
+      "yahoo": 9,
+      "espn": 9,
+      "nffc": 17,
+      "projected": 12
+    },
+    {
+      "id": "p55",
+      "name": "Zay Flowers",
+      "pos": "WR",
+      "yahoo": 8,
+      "espn": 11,
+      "nffc": 16,
+      "projected": 12
+    },
+    {
+      "id": "p56",
+      "name": "Courtland Sutton",
+      "pos": "WR",
+      "yahoo": 8,
+      "espn": 11,
+      "nffc": 21,
+      "projected": 13
+    },
+    {
+      "id": "p57",
+      "name": "Isiah Pacheco",
+      "pos": "RB",
+      "yahoo": 8,
+      "espn": 10,
+      "nffc": 12,
+      "projected": 10
+    },
+    {
+      "id": "p58",
+      "name": "Kaleb Johnson",
+      "pos": "RB",
+      "yahoo": 7,
+      "espn": 4,
+      "nffc": 9,
+      "projected": 7
+    },
+    {
+      "id": "p59",
+      "name": "D'Andre Swift",
+      "pos": "RB",
+      "yahoo": 7,
+      "espn": 12,
+      "nffc": 14,
+      "projected": 11
+    },
+    {
+      "id": "p60",
+      "name": "Patrick Mahomes II",
+      "pos": "QB",
+      "yahoo": 7,
+      "espn": 1,
+      "nffc": 9,
+      "projected": 6
+    },
+    {
+      "id": "p61",
+      "name": "Tony Pollard",
+      "pos": "RB",
+      "yahoo": 8,
+      "espn": 8,
+      "nffc": 11,
+      "projected": 9
+    },
+    {
+      "id": "p62",
+      "name": "George Pickens",
+      "pos": "WR",
+      "yahoo": 8,
+      "espn": 9,
+      "nffc": 20,
+      "projected": 12
+    },
+    {
+      "id": "p63",
+      "name": "Xavier Worthy",
+      "pos": "WR",
+      "yahoo": 7,
+      "espn": 14,
+      "nffc": 21,
+      "projected": 14
+    },
+    {
+      "id": "p64",
+      "name": "Jameson Williams",
+      "pos": "WR",
+      "yahoo": 6,
+      "espn": 9,
+      "nffc": 20,
+      "projected": 12
+    },
+    {
+      "id": "p65",
+      "name": "Aaron Jones",
+      "pos": "RB",
+      "yahoo": 1,
+      "espn": 1,
+      "nffc": 9,
+      "projected": 4
+    },
+    {
+      "id": "p66",
+      "name": "Travis Kelce",
+      "pos": "TE",
+      "yahoo": 6,
+      "espn": 8,
+      "nffc": 8,
+      "projected": 7
+    },
+    {
+      "id": "p67",
+      "name": "Tetairoa McMillan",
+      "pos": "WR",
+      "yahoo": 7,
+      "espn": 7,
+      "nffc": 21,
+      "projected": 12
+    },
+    {
+      "id": "p68",
+      "name": "Jaylen Waddle",
+      "pos": "WR",
+      "yahoo": 6,
+      "espn": 8,
+      "nffc": 17,
+      "projected": 10
+    },
+    {
+      "id": "p69",
+      "name": "Travis Hunter",
+      "pos": "WR",
+      "yahoo": 5,
+      "espn": 7,
+      "nffc": 11,
+      "projected": 8
+    },
+    {
+      "id": "p70",
+      "name": "T.J. Hockenson",
+      "pos": "TE",
+      "yahoo": 5,
+      "espn": 7,
+      "nffc": 8,
+      "projected": 7
+    },
+    {
+      "id": "p71",
+      "name": "Baker Mayfield",
+      "pos": "QB",
+      "yahoo": 4,
+      "espn": 10,
+      "nffc": 6,
+      "projected": 7
+    },
+    {
+      "id": "p72",
+      "name": "Calvin Ridley",
+      "pos": "WR",
+      "yahoo": 5,
+      "espn": 10,
+      "nffc": 20,
+      "projected": 12
+    },
+    {
+      "id": "p73",
+      "name": "Mark Andrews",
+      "pos": "TE",
+      "yahoo": 4,
+      "espn": 4,
+      "nffc": 6,
+      "projected": 5
+    },
+    {
+      "id": "p74",
+      "name": "Bo Nix",
+      "pos": "QB",
+      "yahoo": 4,
+      "espn": 8,
+      "nffc": 5,
+      "projected": 6
+    },
+    {
+      "id": "p75",
+      "name": "Chris Godwin",
+      "pos": "WR",
+      "yahoo": 1,
+      "espn": 4,
+      "nffc": 7,
+      "projected": 4
+    },
+    {
+      "id": "p76",
+      "name": "Quinshon Judkins",
+      "pos": "RB",
+      "yahoo": 4,
+      "espn": 2,
+      "nffc": 4,
+      "projected": 3
+    },
+    {
+      "id": "p77",
+      "name": "Brian Robinson Jr.",
+      "pos": "RB",
+      "yahoo": 3,
+      "espn": 1,
+      "nffc": 5,
+      "projected": 3
+    },
+    {
+      "id": "p78",
+      "name": "Tyrone Tracy Jr.",
+      "pos": "RB",
+      "yahoo": 4,
+      "espn": 5,
+      "nffc": 6,
+      "projected": 5
+    },
+    {
+      "id": "p79",
+      "name": "Chris Olave",
+      "pos": "WR",
+      "yahoo": 3,
+      "espn": 4,
+      "nffc": 10,
+      "projected": 6
+    },
+    {
+      "id": "p80",
+      "name": "Jordan Mason",
+      "pos": "RB",
+      "yahoo": 3,
+      "espn": 2,
+      "nffc": 7,
+      "projected": 4
+    },
+    {
+      "id": "p81",
+      "name": "Brandon Aubrey",
+      "pos": "K",
+      "yahoo": 3,
+      "espn": 3,
+      "nffc": 1,
+      "projected": 2
+    },
+    {
+      "id": "p82",
+      "name": "Travis Etienne Jr.",
+      "pos": "RB",
+      "yahoo": 3,
+      "espn": 2,
+      "nffc": 7,
+      "projected": 4
+    },
+    {
+      "id": "p83",
+      "name": "Jaylen Warren",
+      "pos": "RB",
+      "yahoo": 3,
+      "espn": 4,
+      "nffc": 7,
+      "projected": 5
+    },
+    {
+      "id": "p84",
+      "name": "Emeka Egbuka",
+      "pos": "WR",
+      "yahoo": 4,
+      "espn": 5,
+      "nffc": 12,
+      "projected": 7
+    },
+    {
+      "id": "p85",
+      "name": "Rome Odunze",
+      "pos": "WR",
+      "yahoo": 3,
+      "espn": 6,
+      "nffc": 10,
+      "projected": 6
+    },
+    {
+      "id": "p86",
+      "name": "J.K. Dobbins",
+      "pos": "RB",
+      "yahoo": 3,
+      "espn": 3,
+      "nffc": 6,
+      "projected": 4
+    },
+    {
+      "id": "p87",
+      "name": "Evan Engram",
+      "pos": "TE",
+      "yahoo": 3,
+      "espn": 4,
+      "nffc": 6,
+      "projected": 4
+    },
+    {
+      "id": "p88",
+      "name": "Justin Fields",
+      "pos": "QB",
+      "yahoo": 2,
+      "espn": 3,
+      "nffc": 4,
+      "projected": 3
+    },
+    {
+      "id": "p89",
+      "name": "Kyler Murray",
+      "pos": "QB",
+      "yahoo": 2,
+      "espn": 5,
+      "nffc": 3,
+      "projected": 3
+    },
+    {
+      "id": "p90",
+      "name": "Jerry Jeudy",
+      "pos": "WR",
+      "yahoo": 2,
+      "espn": 7,
+      "nffc": 13,
+      "projected": 7
+    },
+    {
+      "id": "p91",
+      "name": "Brock Purdy",
+      "pos": "QB",
+      "yahoo": 3,
+      "espn": 5,
+      "nffc": 3,
+      "projected": 4
+    },
+    {
+      "id": "p92",
+      "name": "Ricky Pearsall",
+      "pos": "WR",
+      "yahoo": 3,
+      "espn": 4,
+      "nffc": 13,
+      "projected": 7
+    },
+    {
+      "id": "p93",
+      "name": "Jordan Addison",
+      "pos": "WR",
+      "yahoo": 2,
+      "espn": 3,
+      "nffc": 9,
+      "projected": 5
+    },
+    {
+      "id": "p94",
+      "name": "Tyler Warren",
+      "pos": "TE",
+      "yahoo": 3,
+      "espn": 4,
+      "nffc": 6,
+      "projected": 4
+    },
+    {
+      "id": "p95",
+      "name": "Zach Charbonnet",
+      "pos": "RB",
+      "yahoo": 3,
+      "espn": 2,
+      "nffc": 6,
+      "projected": 4
+    },
+    {
+      "id": "p96",
+      "name": "Jakobi Meyers",
+      "pos": "WR",
+      "yahoo": 2,
+      "espn": 4,
+      "nffc": 10,
+      "projected": 5
+    },
+    {
+      "id": "p97",
+      "name": "Cooper Kupp",
+      "pos": "WR",
+      "yahoo": 2,
+      "espn": 4,
+      "nffc": 5,
+      "projected": 4
+    },
+    {
+      "id": "p98",
+      "name": "David Njoku",
+      "pos": "TE",
+      "yahoo": 2,
+      "espn": 4,
+      "nffc": 4,
+      "projected": 3
+    }
+  ]
+}
