@@ -8,8 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test \"test/**/*.test.js\"",
-    "refresh": "node scripts/refresh.mjs",
-    "refresh:seed": "node scripts/gen_seed.mjs"
+    "refresh": "node scripts/refresh.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.383.0",

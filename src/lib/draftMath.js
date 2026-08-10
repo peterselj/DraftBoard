@@ -13,6 +13,8 @@
 // 12-team/2-starter league) instead of counting every remaining player
 // equally. Backlogged in FEATURE_BACKLOG.md.
 
+import { DEFAULT_SCORING } from "./scoring.js";
+
 export const POSITIONS = ["QB", "RB", "WR", "TE", "K", "DEF"];
 export const FLEX_ELIGIBLE = ["RB", "WR", "TE"];
 export const SCARCITY_POS = ["QB", "RB", "WR", "TE"];
@@ -20,7 +22,8 @@ export const SCARCITY_POS = ["QB", "RB", "WR", "TE"];
 export const DEFAULT_SETTINGS = {
   numTeams: 12,
   budget: 200,
-  roster: { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, K: 1, DEF: 1, BENCH: 6 },
+  roster: { QB: 1, RB: 2, WR: 3, TE: 1, FLEX: 1, K: 1, DEF: 1, BENCH: 6 },
+  scoring: DEFAULT_SCORING,
 };
 
 export function defaultTeams(numTeams) {
@@ -75,36 +78,58 @@ export function teamSlotBreakdown(teamId, players, roster) {
   };
 }
 
-/** Fixed "at draft start" demand/supply ratio per position — the norm live
- *  scarcity is measured against. Computed from the full seed pool + full
- *  roster requirements, independent of what's happened in the draft so far. */
-export function computeBaseline(settings, allPlayers) {
-  const { numTeams, roster } = settings;
-  const supply = {};
+/** How many players each scarcity position has in a pool — the supply half of
+ *  the baseline. Snapshotted when a draft starts so the baseline reflects the
+ *  pool actually being drafted from (including hand-added players), not the
+ *  shipped seed file. */
+export function positionCounts(players) {
+  const counts = {};
   SCARCITY_POS.forEach((pos) => {
-    supply[pos] = allPlayers.filter((p) => p.pos === pos).length;
+    counts[pos] = players.filter((p) => p.pos === pos).length;
   });
+  return counts;
+}
+
+/** Fixed "at draft start" demand/supply ratio per position — the norm live
+ *  scarcity is measured against. */
+export function computeBaseline(settings, allPlayers) {
+  return computeBaselineFromCounts(settings, positionCounts(allPlayers));
+}
+
+/** Same, from a stored supply snapshot. Demand is recomputed from current
+ *  settings so editing roster slots mid-draft doesn't leave a stale baseline. */
+export function computeBaselineFromCounts(settings, supply) {
+  const { numTeams, roster } = settings;
+  const at = (pos) => (supply && supply[pos]) || 0;
   const dedicatedDemand = {};
   SCARCITY_POS.forEach((pos) => {
     dedicatedDemand[pos] = (roster[pos] || 0) * numTeams;
   });
   const totalFlexDemand = (roster.FLEX || 0) * numTeams;
-  const flexSupplyTotal = FLEX_ELIGIBLE.reduce((s, pos) => s + supply[pos], 0) || 1;
+  const flexSupplyTotal = FLEX_ELIGIBLE.reduce((s, pos) => s + at(pos), 0) || 1;
 
   const ratio = {};
   SCARCITY_POS.forEach((pos) => {
     const flexShare = FLEX_ELIGIBLE.includes(pos)
-      ? totalFlexDemand * (supply[pos] / flexSupplyTotal)
+      ? totalFlexDemand * (at(pos) / flexSupplyTotal)
       : 0;
     const demand = dedicatedDemand[pos] + flexShare;
-    ratio[pos] = supply[pos] > 0 ? demand / supply[pos] : 99;
+    ratio[pos] = at(pos) > 0 ? demand / at(pos) : 99;
   });
   return ratio;
 }
 
 /** Live budget-inflation + positional-scarcity multipliers given the
- *  current state of the draft. */
-export function computeLive(players, teams, settings, baselineRatio) {
+ *  current state of the draft.
+ *
+ *  `baseValueOf` says what a player is worth standalone. It must be the same
+ *  currency the board prices in — the model value when we have projections —
+ *  otherwise inflation measures dollars against a yardstick that never
+ *  summed to the budget in the first place, and reads hot from pick one. */
+export function computeLive(
+  players, teams, settings, baselineRatio,
+  baseValueOf = (p) => p.model ?? p.projected
+) {
   const { roster, budget } = settings;
 
   let totalRemainingBudget = 0;
@@ -133,7 +158,7 @@ export function computeLive(players, teams, settings, baselineRatio) {
   const competitiveDollars = Math.max(0, totalRemainingBudget - totalOpenSlots);
   const undraftedValueSum = players
     .filter((p) => !p.drafted)
-    .reduce((s, p) => s + Math.max(0, p.projected - 1), 0);
+    .reduce((s, p) => s + Math.max(0, (baseValueOf(p) ?? 1) - 1), 0);
   const budgetInflationMult = undraftedValueSum > 0 ? competitiveDollars / undraftedValueSum : 1;
 
   const liveSupply = {};
@@ -157,11 +182,16 @@ export function computeLive(players, teams, settings, baselineRatio) {
   return { teamStats, budgetInflationMult, scarcityMult, competitiveDollars, undraftedValueSum };
 }
 
-export function adjustedValue(player, live) {
-  if (SCARCITY_POS.includes(player.pos)) {
-    const mult = live.budgetInflationMult * (live.scarcityMult[player.pos] || 1);
-    return Math.max(1, Math.round(1 + (Math.max(player.projected, 1) - 1) * mult));
-  }
-  // K/DEF: budget inflation only — scarcity isn't meaningful for these.
-  return Math.max(1, Math.round(1 + (Math.max(player.projected, 1) - 1) * live.budgetInflationMult));
+/** What a player is worth *right now*, given the state of the draft.
+ *
+ *  `base` is the player's standalone dollar value — the model value derived
+ *  from projections when we have them, falling back to the sheet value.
+ *  The $1 floor is held out of the multiplier: only money above the roster
+ *  minimum inflates. */
+export function adjustedValue(player, live, base = player.model ?? player.projected) {
+  const b = Math.max(base ?? 1, 1);
+  // K/DEF: budget inflation only — positional scarcity isn't meaningful there.
+  const scarcity = SCARCITY_POS.includes(player.pos) ? live.scarcityMult[player.pos] || 1 : 1;
+  const mult = live.budgetInflationMult * scarcity;
+  return Math.max(1, Math.round(1 + (b - 1) * mult));
 }
