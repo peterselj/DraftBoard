@@ -1,99 +1,186 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Search, Trash2, RotateCcw, Star, Settings2, Plus, X } from "lucide-react";
+import { RotateCcw, Settings2, X, Undo2, Keyboard } from "lucide-react";
 import seedData from "./data/players2025.json";
 import {
-  POSITIONS, FLEX_ELIGIBLE, SCARCITY_POS, DEFAULT_SETTINGS, defaultTeams,
-  computeBaseline, computeLive, adjustedValue,
+  POSITIONS, FLEX_ELIGIBLE, DEFAULT_SETTINGS, defaultTeams,
+  computeBaselineFromCounts, positionCounts, computeLive, adjustedValue,
 } from "./lib/draftMath.js";
 import { loadDraft, saveDraft, clearDraft } from "./lib/storage.js";
+import { C, F, ui, money } from "./theme.js";
+import ConfirmDialog from "./components/ConfirmDialog.jsx";
+import QuickEntry from "./components/QuickEntry.jsx";
+import FilterBar from "./components/FilterBar.jsx";
+import PlayerTable from "./components/PlayerTable.jsx";
+import SettingsPanel from "./components/SettingsPanel.jsx";
+import { PressureGauge, ScarcityChips, TeamStrip } from "./components/Dashboard.jsx";
 
-const SEED_PLAYERS = seedData.players.map((p) => ({
-  ...p, drafted: false, paid: null, draftedBy: null,
-  snapAdjValue: null, snapBudgetMult: null, snapScarcityMult: null,
-}));
+const freshPlayers = () =>
+  seedData.players.map((p) => ({
+    ...p, drafted: false, paid: null, draftedBy: null,
+    snapAdjValue: null, snapBudgetMult: null, snapScarcityMult: null,
+  }));
 
-const money = (n) => `$${Math.round(n)}`;
-const fmtMult = (n) => `${n.toFixed(2)}x`;
+const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper"];
+
+/** What the room is likely to pay: the mean of whatever published auction
+ *  values we have for this player. Null when we have none. */
+function marketValue(p) {
+  const vals = MARKET_KEYS.map((k) => p[k]).filter((v) => typeof v === "number" && v > 0);
+  if (!vals.length) return null;
+  return vals.reduce((s, v) => s + v, 0) / vals.length;
+}
 
 export default function App() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [teams, setTeams] = useState(defaultTeams(DEFAULT_SETTINGS.numTeams));
-  const [players, setPlayers] = useState(SEED_PLAYERS);
+  const [teams, setTeams] = useState(() => defaultTeams(DEFAULT_SETTINGS.numTeams));
+  const [players, setPlayers] = useState(freshPlayers);
+  const [picks, setPicks] = useState([]);
+  const [baselinePool, setBaselinePool] = useState(() => positionCounts(freshPlayers()));
   const [loaded, setLoaded] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [posFilter, setPosFilter] = useState("ALL");
+  const [selectedPos, setSelectedPos] = useState(() => new Set());
+  const [flexOn, setFlexOn] = useState(false);
   const [hideDrafted, setHideDrafted] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [newPlayer, setNewPlayer] = useState({ name: "", pos: "RB", projected: 5 });
   const [draftInputs, setDraftInputs] = useState({});
+  const [confirm, setConfirm] = useState(null);
+  const [toast, setToast] = useState(null);
 
+  const quickRef = useRef(null);
+  const searchRef = useRef(null);
   const saveTimer = useRef(null);
+  const toastTimer = useRef(null);
 
+  // ---- persistence ---------------------------------------------------------
   useEffect(() => {
     const saved = loadDraft();
     if (saved) {
       if (saved.settings) setSettings(saved.settings);
       if (saved.teams) setTeams(saved.teams);
       if (saved.players) setPlayers(saved.players);
+      if (saved.picks) setPicks(saved.picks);
+      setBaselinePool(saved.baselinePool || positionCounts(saved.players || freshPlayers()));
     }
     setLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (!loaded) return;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => saveDraft({ settings, teams, players }), 400);
+    if (!loaded) return undefined;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(
+      () => saveDraft({ settings, teams, players, picks, baselinePool }),
+      400
+    );
     return () => clearTimeout(saveTimer.current);
-  }, [settings, teams, players, loaded]);
+  }, [settings, teams, players, picks, baselinePool, loaded]);
 
-  const baselineRatio = useMemo(() => computeBaseline(settings, SEED_PLAYERS), [settings]);
+  // ---- derived draft state -------------------------------------------------
+  const baselineRatio = useMemo(
+    () => computeBaselineFromCounts(settings, baselinePool),
+    [settings, baselinePool]
+  );
   const live = useMemo(
     () => computeLive(players, teams, settings, baselineRatio),
     [players, teams, settings, baselineRatio]
   );
-
   const myTeam = teams.find((t) => t.isMe) || teams[0];
 
-  const visiblePlayers = useMemo(() => {
-    let list = players.filter((p) => {
-      if (hideDrafted && p.drafted) return false;
-      if (posFilter !== "ALL" && p.pos !== posFilter) return false;
-      if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    });
-    list = list.map((p) => ({ ...p, _adj: adjustedValue(p, live) }));
-    list.sort((a, b) => {
-      if (a.drafted !== b.drafted) return a.drafted ? 1 : -1;
-      return b._adj - a._adj;
-    });
-    return list;
-  }, [players, hideDrafted, posFilter, search, live]);
-
-  const draftPlayer = useCallback(
-    (playerId) => {
-      const input = draftInputs[playerId];
-      if (!input || !input.teamId || !input.price) return;
-      const price = Math.max(1, parseInt(input.price, 10) || 1);
-      setPlayers((prev) =>
-        prev.map((p) => {
-          if (p.id !== playerId) return p;
-          const snap = adjustedValue(p, live);
-          return {
-            ...p, drafted: true, paid: price, draftedBy: input.teamId,
-            snapAdjValue: snap, snapBudgetMult: live.budgetInflationMult,
-            snapScarcityMult: live.scarcityMult[p.pos] || 1,
-          };
-        })
-      );
-      setDraftInputs((prev) => {
-        const n = { ...prev };
-        delete n[playerId];
-        return n;
-      });
+  /** The three numbers every row (and the quick-entry preview) needs. */
+  const valueOf = useCallback(
+    (p) => {
+      const model = p.model ?? p.projected;
+      const market = marketValue(p);
+      return {
+        model,
+        market,
+        edge: market == null ? 0 : model - market,
+        live: adjustedValue(p, live, model),
+      };
     },
-    [draftInputs, live]
+    [live]
+  );
+
+  const effectivePos = useMemo(() => {
+    const set = new Set(selectedPos);
+    if (flexOn) FLEX_ELIGIBLE.forEach((p) => set.add(p));
+    return set;
+  }, [selectedPos, flexOn]);
+
+  const visibleRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = players
+      .filter((p) => {
+        if (hideDrafted && p.drafted) return false;
+        if (effectivePos.size > 0 && !effectivePos.has(p.pos)) return false;
+        if (q && !p.name.toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .map((p) => ({ ...p, _val: valueOf(p) }));
+    rows.sort((a, b) => {
+      if (a.drafted !== b.drafted) return a.drafted ? 1 : -1;
+      return b._val.live - a._val.live;
+    });
+    return rows;
+  }, [players, hideDrafted, effectivePos, search, valueOf]);
+
+  const draftedCount = useMemo(() => players.filter((p) => p.drafted).length, [players]);
+  const maxBidFor = useCallback(
+    (teamId) => Math.max(1, live.teamStats[teamId]?.maxBid ?? 1),
+    [live]
+  );
+
+  // ---- actions -------------------------------------------------------------
+  const flashToast = useCallback((node) => {
+    setToast(node);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 5000);
+  }, []);
+
+  const commitPick = useCallback(
+    ({ playerId, price, teamId }) => {
+      const p = players.find((x) => x.id === playerId);
+      if (!p || p.drafted || !teamId) return false;
+      const paid = Math.max(1, parseInt(price, 10) || 1);
+      const snap = adjustedValue(p, live, p.model ?? p.projected);
+
+      setPlayers((prev) =>
+        prev.map((x) =>
+          x.id === playerId
+            ? {
+                ...x, drafted: true, paid, draftedBy: teamId,
+                snapAdjValue: snap,
+                snapBudgetMult: live.budgetInflationMult,
+                snapScarcityMult: live.scarcityMult[x.pos] || 1,
+              }
+            : x
+        )
+      );
+      setPicks((prev) => [...prev, { playerId, price: paid, teamId, at: Date.now() }]);
+      setDraftInputs((prev) => {
+        const next = { ...prev };
+        delete next[playerId];
+        return next;
+      });
+      const teamName = teams.find((t) => t.id === teamId)?.name || "?";
+      flashToast(`${p.name} → ${teamName} · ${money(paid)}`);
+      return true;
+    },
+    [players, teams, live, flashToast]
+  );
+
+  const draftFromRow = useCallback(
+    (playerId, override) => {
+      const input = override || draftInputs[playerId];
+      if (!input?.teamId || !input?.price) {
+        flashToast("Needs a price and a team before it can be logged.");
+        return;
+      }
+      commitPick({ playerId, price: input.price, teamId: input.teamId });
+    },
+    [draftInputs, commitPick, flashToast]
   );
 
   const undraftPlayer = useCallback((playerId) => {
@@ -104,39 +191,94 @@ export default function App() {
           : p
       )
     );
+    setPicks((prev) => {
+      const idx = [...prev].reverse().findIndex((k) => k.playerId === playerId);
+      if (idx === -1) return prev;
+      const realIdx = prev.length - 1 - idx;
+      return [...prev.slice(0, realIdx), ...prev.slice(realIdx + 1)];
+    });
   }, []);
 
-  const removePlayer = useCallback((playerId) => {
-    setPlayers((prev) => prev.filter((p) => p.id !== playerId));
-  }, []);
+  const undoLastPick = useCallback(() => {
+    const last = picks[picks.length - 1];
+    if (!last) {
+      flashToast("Nothing to undo.");
+      return;
+    }
+    undraftPlayer(last.playerId);
+    const name = players.find((p) => p.id === last.playerId)?.name || "pick";
+    flashToast(`Undid ${name} (${money(last.price)}).`);
+  }, [picks, players, undraftPlayer, flashToast]);
+
+  const requestRemovePlayer = useCallback(
+    (playerId) => {
+      const p = players.find((x) => x.id === playerId);
+      if (!p) return;
+      setConfirm({
+        title: `Remove ${p.name}?`,
+        body: "Takes him out of the pool entirely — he'll stop counting toward positional supply. Undo isn't available for this.",
+        confirmLabel: "Remove",
+        danger: true,
+        onConfirm: () => {
+          setPlayers((prev) => prev.filter((x) => x.id !== playerId));
+          setConfirm(null);
+        },
+      });
+    },
+    [players]
+  );
+
+  const requestNewDraft = useCallback(() => {
+    setConfirm({
+      title: "Start a new draft?",
+      body: "Clears every pick and resets budgets. League settings and team names are kept.",
+      confirmLabel: "Start new draft",
+      danger: true,
+      onConfirm: () => {
+        const pool = freshPlayers();
+        setPlayers(pool);
+        setPicks([]);
+        setBaselinePool(positionCounts(pool));
+        setDraftInputs({});
+        setSearch("");
+        setSelectedPos(new Set());
+        setFlexOn(false);
+        setHideDrafted(false);
+        setTeams((prev) => prev.map((t) => ({ ...t })));
+        clearDraft();
+        setConfirm(null);
+        flashToast("New draft started.");
+      },
+    });
+  }, [flashToast]);
 
   const addPlayer = () => {
-    if (!newPlayer.name.trim()) return;
+    const name = newPlayer.name.trim();
+    if (!name) return;
     const proj = Math.max(1, parseInt(newPlayer.projected, 10) || 1);
-    setPlayers((prev) => [
-      ...prev,
-      {
-        id: `custom-${Date.now()}`, name: newPlayer.name.trim(), pos: newPlayer.pos,
-        yahoo: proj, espn: proj, nffc: proj, projected: proj,
-        drafted: false, paid: null, draftedBy: null,
-        snapAdjValue: null, snapBudgetMult: null, snapScarcityMult: null,
-      },
-    ]);
+    const player = {
+      id: `custom-${Date.now()}`, name, pos: newPlayer.pos,
+      yahoo: proj, espn: proj, nffc: proj, projected: proj,
+      drafted: false, paid: null, draftedBy: null,
+      snapAdjValue: null, snapBudgetMult: null, snapScarcityMult: null,
+    };
+    setPlayers((prev) => [...prev, player]);
+    // Added players count toward positional supply from here on.
+    setBaselinePool((prev) => ({ ...prev, [player.pos]: (prev[player.pos] || 0) + 1 }));
     setNewPlayer({ name: "", pos: "RB", projected: 5 });
     setAddOpen(false);
+    // Make sure the new row is actually reachable rather than filtered away.
+    setSelectedPos(new Set());
+    setFlexOn(false);
+    setHideDrafted(false);
+    setSearch(name);
+    flashToast(`Added ${name} (${player.pos}, ${money(proj)}).`);
   };
 
-  const resetDraft = () => {
-    if (!window.confirm("Start a new draft? This clears all picks and resets settings.")) return;
-    setPlayers(SEED_PLAYERS);
-    setTeams(defaultTeams(DEFAULT_SETTINGS.numTeams));
-    setSettings(DEFAULT_SETTINGS);
-    clearDraft();
-  };
-
-  const updateRoster = (key, val) => {
+  // ---- settings ------------------------------------------------------------
+  const updateRoster = (key, val) =>
     setSettings((s) => ({ ...s, roster: { ...s.roster, [key]: Math.max(0, parseInt(val, 10) || 0) } }));
-  };
+
   const updateNumTeams = (val) => {
     const n = Math.max(2, Math.min(20, parseInt(val, 10) || 2));
     setSettings((s) => ({ ...s, numTeams: n }));
@@ -150,11 +292,67 @@ export default function App() {
       return prev.slice(0, n);
     });
   };
+
+  const applyTeamNames = (names) => {
+    setTeams((prev) => {
+      const kept = names.map((name, i) => ({
+        id: prev[i]?.id ?? `t${i}`,
+        name,
+        isMe: prev[i]?.isMe ?? i === 0,
+      }));
+      if (!kept.some((t) => t.isMe) && kept.length) kept[0].isMe = true;
+      return kept;
+    });
+    setSettings((s) => ({ ...s, numTeams: names.length }));
+    flashToast(`Loaded ${names.length} teams.`);
+  };
+
   const renameTeam = (id, name) => setTeams((prev) => prev.map((t) => (t.id === id ? { ...t, name } : t)));
   const setMyTeam = (id) => setTeams((prev) => prev.map((t) => ({ ...t, isMe: t.id === id })));
 
-  const gaugePct = Math.min(100, Math.max(0, ((live.budgetInflationMult - 0.6) / (1.6 - 0.6)) * 100));
-  const gaugeTone = live.budgetInflationMult >= 1.08 ? "hot" : live.budgetInflationMult <= 0.92 ? "cold" : "even";
+  const togglePos = (pos) =>
+    setSelectedPos((prev) => {
+      const next = new Set(prev);
+      if (next.has(pos)) next.delete(pos);
+      else next.add(pos);
+      return next;
+    });
+
+  const setDraftInput = useCallback((playerId, value) => {
+    setDraftInputs((prev) => ({ ...prev, [playerId]: value }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setSearch("");
+    setSelectedPos(new Set());
+    setFlexOn(false);
+    setHideDrafted(false);
+  }, []);
+
+  // ---- keyboard ------------------------------------------------------------
+  useEffect(() => {
+    const onKey = (e) => {
+      const el = e.target;
+      const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT");
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        undoLastPick();
+        return;
+      }
+      if (typing) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        quickRef.current?.focus();
+      } else if (e.key.toLowerCase() === "h") {
+        setHideDrafted((v) => !v);
+      } else if (e.key.toLowerCase() === "f") {
+        setFlexOn((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undoLastPick]);
 
   if (!loaded) return <div style={styles.app}>loading…</div>;
 
@@ -162,263 +360,152 @@ export default function App() {
     <div style={styles.app}>
       <GlobalStyle />
 
-      <div style={styles.header}>
-        <div style={styles.headerTop}>
-          <div>
-            <div style={styles.eyebrow}>DRAFT NIGHT — {settings.numTeams} TEAMS · ${settings.budget}</div>
-            <h1 style={styles.h1}>THE DRAFT ROOM</h1>
+      <div style={styles.headerTop}>
+        <div>
+          <div style={styles.eyebrow}>
+            DRAFT NIGHT — {settings.numTeams} TEAMS · ${settings.budget} ·{" "}
+            {draftedCount} {draftedCount === 1 ? "PICK" : "PICKS"} IN
           </div>
-          <div style={styles.headerBtns}>
-            <button style={styles.iconBtn} onClick={() => setShowSettings((s) => !s)}>
-              <Settings2 size={16} /> Settings
-            </button>
-            <button style={{ ...styles.iconBtn, color: "#C1443C", borderColor: "#4a2624" }} onClick={resetDraft}>
-              <RotateCcw size={16} /> New Draft
-            </button>
-          </div>
+          <h1 style={styles.h1}>DRAFT BOARD</h1>
         </div>
-
-        <div style={styles.gaugeRow}>
-          <div style={styles.gaugeCard}>
-            <div style={styles.gaugeLabel}>
-              DRAFT ROOM PRESSURE <span style={{ opacity: 0.6, fontWeight: 400 }}>— league-wide budget vs. value left</span>
-            </div>
-            <div style={styles.gaugeTrack}>
-              <div style={styles.gaugeTickCenter} />
-              <div
-                style={{
-                  ...styles.gaugeFill, width: `${gaugePct}%`,
-                  background: gaugeTone === "hot" ? "#C1443C" : gaugeTone === "cold" ? "#4FA69A" : "#D8A63D",
-                }}
-              />
-              <div style={{ ...styles.gaugeNeedle, left: `${gaugePct}%` }} />
-            </div>
-            <div style={styles.gaugeFoot}>
-              <span>0.6x</span>
-              <span
-                style={{
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 20, fontWeight: 700,
-                  color: gaugeTone === "hot" ? "#E27167" : gaugeTone === "cold" ? "#6FC4B9" : "#E7BE6C",
-                }}
-              >
-                {fmtMult(live.budgetInflationMult)}
-              </span>
-              <span>1.6x</span>
-            </div>
-            <div style={{ fontSize: 11, color: "#8CA098", marginTop: 2 }}>
-              {gaugeTone === "hot" && "Room is spending hot — dollars are worth less than sheet value."}
-              {gaugeTone === "cold" && "Room is cold — dollars are worth more than sheet value. Good time to buy."}
-              {gaugeTone === "even" && "Room is roughly on pace with projections."}
-            </div>
-          </div>
-
-          <div style={styles.scarcityCards}>
-            {SCARCITY_POS.map((pos) => {
-              const m = live.scarcityMult[pos] || 1;
-              const tone = m >= 1.25 ? "hot" : m <= 0.8 ? "cold" : "even";
-              return (
-                <div
-                  key={pos}
-                  style={{
-                    ...styles.scarcityChip,
-                    borderColor: tone === "hot" ? "#5b2c28" : tone === "cold" ? "#204d47" : "#3a4a3e",
-                    background: tone === "hot" ? "#221514" : tone === "cold" ? "#0f2320" : "#141d17",
-                  }}
-                >
-                  <div style={styles.scarcityPos}>{pos}</div>
-                  <div
-                    style={{
-                      fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700,
-                      color: tone === "hot" ? "#E27167" : tone === "cold" ? "#6FC4B9" : "#D8CFB6",
-                    }}
-                  >
-                    {fmtMult(m)}
-                  </div>
-                  <div style={styles.scarcityHint}>{tone === "hot" ? "drying up" : tone === "cold" ? "plenty left" : "on pace"}</div>
-                </div>
-              );
-            })}
-          </div>
+        <div style={styles.headerBtns}>
+          <button style={ui.btn} onClick={undoLastPick} disabled={!picks.length} title="Ctrl+Z">
+            <Undo2 size={16} /> Undo{picks.length ? ` (${picks.length})` : ""}
+          </button>
+          <button style={ui.btn} onClick={() => setShowSettings((s) => !s)}>
+            <Settings2 size={16} /> Settings
+          </button>
+          <button
+            style={{ ...ui.btn, color: C.red, borderColor: "#4a2624" }}
+            onClick={requestNewDraft}
+          >
+            <RotateCcw size={16} /> New Draft
+          </button>
         </div>
+      </div>
+
+      <div style={styles.gaugeRow}>
+        <PressureGauge live={live} />
+        <ScarcityChips live={live} />
       </div>
 
       {showSettings && (
         <SettingsPanel
-          settings={settings} teams={teams}
-          updateRoster={updateRoster} updateNumTeams={updateNumTeams}
-          renameTeam={renameTeam} setMyTeam={setMyTeam}
+          settings={settings}
+          teams={teams}
+          updateRoster={updateRoster}
+          updateNumTeams={updateNumTeams}
+          renameTeam={renameTeam}
+          setMyTeam={setMyTeam}
           setBudget={(v) => setSettings((s) => ({ ...s, budget: Math.max(1, parseInt(v, 10) || 1) }))}
+          applyTeamNames={applyTeamNames}
         />
       )}
 
-      <div style={styles.teamStrip}>
-        {teams.map((t) => {
-          const st = live.teamStats[t.id];
-          if (!st) return null;
-          const tight = st.remaining <= 15;
-          return (
-            <div key={t.id} style={{ ...styles.teamCard, borderColor: t.isMe ? "#D8A63D" : "#26302a" }}>
-              <div style={styles.teamName}>
-                {t.isMe && <Star size={11} style={{ marginRight: 4, color: "#D8A63D" }} fill="#D8A63D" />}
-                {t.name}
-              </div>
-              <div style={styles.teamBudgetRow}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 16, color: tight ? "#E27167" : "#F1EFE6" }}>
-                  {money(st.remaining)}
-                </span>
-                <span style={{ fontSize: 10, color: "#6E8078" }}>left</span>
-              </div>
-              <div style={styles.teamSub}>max bid {money(Math.max(1, st.maxBid))} · {st.breakdown.openSlotsTotal} open</div>
-            </div>
-          );
-        })}
-      </div>
+      <TeamStrip teams={teams} live={live} />
 
-      <div style={styles.filterBar}>
-        <div style={styles.searchWrap}>
-          <Search size={14} style={{ color: "#6E8078" }} />
-          <input style={styles.searchInput} placeholder="Search players…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <div style={styles.posTabs}>
-          {["ALL", ...POSITIONS].map((p) => (
-            <button key={p} onClick={() => setPosFilter(p)} style={{ ...styles.posTab, ...(posFilter === p ? styles.posTabActive : {}) }}>
-              {p}
-            </button>
-          ))}
-        </div>
-        <label style={styles.hideToggle}>
-          <input type="checkbox" checked={hideDrafted} onChange={(e) => setHideDrafted(e.target.checked)} />
-          hide drafted
-        </label>
-        <button style={styles.addPlayerBtn} onClick={() => setAddOpen((o) => !o)}>
-          <Plus size={13} /> add player
-        </button>
-      </div>
+      <QuickEntry
+        players={players}
+        teams={teams}
+        myTeamId={myTeam?.id}
+        valueOf={valueOf}
+        onCommit={commitPick}
+        inputRef={quickRef}
+      />
+
+      <FilterBar
+        search={search}
+        setSearch={setSearch}
+        searchRef={searchRef}
+        selectedPos={selectedPos}
+        togglePos={togglePos}
+        clearPos={() => { setSelectedPos(new Set()); setFlexOn(false); }}
+        flexOn={flexOn}
+        toggleFlex={() => setFlexOn((v) => !v)}
+        hideDrafted={hideDrafted}
+        toggleHideDrafted={() => setHideDrafted((v) => !v)}
+        draftedCount={draftedCount}
+        addOpen={addOpen}
+        toggleAdd={() => setAddOpen((o) => !o)}
+      />
 
       {addOpen && (
         <div style={styles.addRow}>
-          <input style={styles.addInput} placeholder="Player name" value={newPlayer.name} onChange={(e) => setNewPlayer((p) => ({ ...p, name: e.target.value }))} />
-          <select style={styles.addSelect} value={newPlayer.pos} onChange={(e) => setNewPlayer((p) => ({ ...p, pos: e.target.value }))}>
+          <input
+            style={{ ...ui.input, flex: 1 }}
+            placeholder="Player name"
+            value={newPlayer.name}
+            autoFocus
+            onChange={(e) => setNewPlayer((p) => ({ ...p, name: e.target.value }))}
+            onKeyDown={(e) => e.key === "Enter" && addPlayer()}
+          />
+          <select
+            style={ui.input}
+            value={newPlayer.pos}
+            onChange={(e) => setNewPlayer((p) => ({ ...p, pos: e.target.value }))}
+          >
             {POSITIONS.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
-          <input style={{ ...styles.addInput, width: 80 }} type="number" placeholder="$ proj" value={newPlayer.projected} onChange={(e) => setNewPlayer((p) => ({ ...p, projected: e.target.value }))} />
-          <button style={styles.addConfirmBtn} onClick={addPlayer}>add</button>
-          <button style={styles.addCancelBtn} onClick={() => setAddOpen(false)}><X size={14} /></button>
+          <input
+            style={{ ...ui.input, width: 84 }}
+            type="number"
+            min="1"
+            placeholder="$ value"
+            value={newPlayer.projected}
+            onChange={(e) => setNewPlayer((p) => ({ ...p, projected: e.target.value }))}
+            onKeyDown={(e) => e.key === "Enter" && addPlayer()}
+          />
+          <button
+            style={{ ...styles.addConfirm, opacity: newPlayer.name.trim() ? 1 : 0.45 }}
+            onClick={addPlayer}
+          >
+            add
+          </button>
+          <button style={styles.addCancel} onClick={() => setAddOpen(false)}><X size={14} /></button>
         </div>
       )}
 
-      <div style={styles.tableWrap}>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Player</th>
-              <th style={styles.th}>Pos</th>
-              <th style={styles.thNum}>Yahoo</th>
-              <th style={styles.thNum}>ESPN</th>
-              <th style={styles.thNum}>NFFC</th>
-              <th style={styles.thNum}>Sheet $</th>
-              <th style={styles.thNum}>Live Value</th>
-              <th style={styles.th}>Draft</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visiblePlayers.map((p) => {
-              const delta = p._adj - p.projected;
-              const deltaTone = delta > 1 ? "#6FC4B9" : delta < -1 ? "#E27167" : "#8CA098";
-              const input = draftInputs[p.id] || { price: "", teamId: myTeam ? myTeam.id : "" };
-              return (
-                <tr key={p.id} style={{ opacity: p.drafted ? 0.55 : 1, background: p.drafted && p.draftedBy === myTeam?.id ? "rgba(216,166,61,0.06)" : "transparent" }}>
-                  <td style={styles.tdName}>{p.name}</td>
-                  <td style={styles.td}><span style={styles.posPill}>{p.pos}</span></td>
-                  <td style={styles.tdNum}>${p.yahoo}</td>
-                  <td style={styles.tdNum}>${p.espn}</td>
-                  <td style={styles.tdNum}>${p.nffc}</td>
-                  <td style={styles.tdNum}>{money(p.projected)}</td>
-                  <td style={styles.tdNum}>
-                    <span style={{ fontWeight: 700 }}>{money(p._adj)}</span>
-                    <span style={{ fontSize: 10, color: deltaTone, marginLeft: 5 }}>{delta > 0 ? "+" : ""}{Math.round(delta)}</span>
-                  </td>
-                  <td style={styles.tdDraft}>
-                    {p.drafted ? (
-                      <div style={styles.draftedInfo}>
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{money(p.paid)}</span>
-                        <span style={{ fontSize: 11, color: "#6E8078" }}>{teams.find((t) => t.id === p.draftedBy)?.name || "?"}</span>
-                        {p.snapAdjValue != null && (
-                          <span style={{ fontSize: 11, color: p.paid - p.snapAdjValue > 1 ? "#E27167" : p.paid - p.snapAdjValue < -1 ? "#6FC4B9" : "#8CA098" }}>
-                            {p.paid - p.snapAdjValue > 0 ? "over by " : p.paid - p.snapAdjValue < 0 ? "value by " : "fair, "}
-                            {p.paid !== p.snapAdjValue ? money(Math.abs(p.paid - p.snapAdjValue)) : ""}
-                          </span>
-                        )}
-                        <button style={styles.undoBtn} onClick={() => undraftPlayer(p.id)}><RotateCcw size={12} /></button>
-                      </div>
-                    ) : (
-                      <div style={styles.draftForm}>
-                        <input type="number" placeholder="$" style={styles.priceInput} value={input.price} onChange={(e) => setDraftInputs((prev) => ({ ...prev, [p.id]: { ...input, price: e.target.value } }))} />
-                        <select style={styles.teamSelect} value={input.teamId} onChange={(e) => setDraftInputs((prev) => ({ ...prev, [p.id]: { ...input, teamId: e.target.value } }))}>
-                          {teams.map((t) => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                          ))}
-                        </select>
-                        <button style={styles.draftBtn} onClick={() => draftPlayer(p.id)}>draft</button>
-                        <button style={styles.removeBtn} onClick={() => removePlayer(p.id)}><Trash2 size={12} /></button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {visiblePlayers.length === 0 && (
-              <tr><td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#6E8078" }}>No players match.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <PlayerTable
+        rows={visibleRows}
+        teams={teams}
+        myTeamId={myTeam?.id}
+        draftInputs={draftInputs}
+        setDraftInput={setDraftInput}
+        onDraft={draftFromRow}
+        onUndraft={undraftPlayer}
+        onRemove={requestRemovePlayer}
+        maxBidFor={maxBidFor}
+        onClearFilters={clearFilters}
+      />
 
       <div style={styles.footNote}>
-        Live Value = $1 + (Sheet $ − 1) × budget-inflation mult × positional-scarcity mult. Scarcity is a raw
-        head-count ratio and doesn't yet account for tiers — see FEATURE_BACKLOG.md.
+        <Keyboard size={13} style={{ verticalAlign: "-2px", marginRight: 6, color: C.dim }} />
+        <b style={{ color: C.bone }}>/</b> jump to quick entry · <b style={{ color: C.bone }}>↑↓</b> pick a
+        candidate · <b style={{ color: C.bone }}>Enter</b> log it · <b style={{ color: C.bone }}>Ctrl+Z</b> undo ·{" "}
+        <b style={{ color: C.bone }}>h</b> hide drafted · <b style={{ color: C.bone }}>f</b> flex
+        <div style={{ marginTop: 6 }}>
+          Live $ = model value adjusted for room pressure and positional scarcity. Scarcity is a
+          raw head-count ratio and doesn't yet account for tiers — see FEATURE_BACKLOG.md.
+        </div>
       </div>
-    </div>
-  );
-}
 
-function SettingsPanel({ settings, teams, updateRoster, updateNumTeams, renameTeam, setMyTeam, setBudget }) {
-  return (
-    <div style={styles.settingsPanel}>
-      <div style={styles.settingsCol}>
-        <div style={styles.settingsHeading}>League</div>
-        <label style={styles.settingsLabel}>Teams
-          <input type="number" style={styles.settingsInput} value={settings.numTeams} onChange={(e) => updateNumTeams(e.target.value)} />
-        </label>
-        <label style={styles.settingsLabel}>Budget per team
-          <input type="number" style={styles.settingsInput} value={settings.budget} onChange={(e) => setBudget(e.target.value)} />
-        </label>
-      </div>
-      <div style={styles.settingsCol}>
-        <div style={styles.settingsHeading}>Roster slots</div>
-        <div style={styles.rosterGrid}>
-          {Object.keys(settings.roster).map((k) => (
-            <label key={k} style={styles.rosterLabel}>{k}
-              <input type="number" style={styles.rosterInput} value={settings.roster[k]} onChange={(e) => updateRoster(k, e.target.value)} />
-            </label>
-          ))}
+      {toast && (
+        <div style={styles.toast} onClick={() => setToast(null)} role="status">
+          {toast}
         </div>
-      </div>
-      <div style={styles.settingsCol}>
-        <div style={styles.settingsHeading}>Teams in the room</div>
-        <div style={styles.teamListEdit}>
-          {teams.map((t) => (
-            <div key={t.id} style={styles.teamEditRow}>
-              <button onClick={() => setMyTeam(t.id)} style={{ ...styles.starBtn, color: t.isMe ? "#D8A63D" : "#3a4a3e" }}>
-                <Star size={14} fill={t.isMe ? "#D8A63D" : "none"} />
-              </button>
-              <input style={styles.teamNameInput} value={t.name} onChange={(e) => renameTeam(t.id, e.target.value)} />
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
+
+      <ConfirmDialog
+        open={Boolean(confirm)}
+        title={confirm?.title}
+        body={confirm?.body}
+        confirmLabel={confirm?.confirmLabel}
+        danger={confirm?.danger}
+        onConfirm={() => confirm?.onConfirm?.()}
+        onCancel={() => setConfirm(null)}
+      />
     </div>
   );
 }
@@ -428,81 +515,33 @@ function GlobalStyle() {
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
       * { box-sizing: border-box; }
-      body { margin: 0; background: #0F1712; }
-      input, select, button { font-family: 'Inter', sans-serif; }
-      input:focus, select:focus { outline: 2px solid #D8A63D; outline-offset: 1px; }
-      button:focus-visible { outline: 2px solid #D8A63D; outline-offset: 1px; }
+      body { margin: 0; background: ${C.bg}; }
+      input, select, button, textarea { font-family: 'Inter', sans-serif; }
+      input:focus, select:focus, textarea:focus { outline: 2px solid ${C.gold}; outline-offset: 1px; }
+      button:focus-visible { outline: 2px solid ${C.gold}; outline-offset: 1px; }
+      button:disabled { opacity: 0.4; cursor: not-allowed; }
       ::-webkit-scrollbar { height: 8px; width: 8px; }
       ::-webkit-scrollbar-thumb { background: #2a352d; border-radius: 4px; }
+      @keyframes riseIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
     `}</style>
   );
 }
 
 const styles = {
-  app: { fontFamily: "'Inter', sans-serif", background: "#0F1712", color: "#F1EFE6", minHeight: "100vh", padding: "18px 20px 28px" },
-  header: { marginBottom: 16 },
+  app: { fontFamily: F.body, background: C.bg, color: C.text, minHeight: "100vh", padding: "18px 20px 28px" },
   headerTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, marginBottom: 14 },
-  eyebrow: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.12em", color: "#D8A63D", marginBottom: 4 },
-  h1: { fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 26, letterSpacing: "0.03em", margin: 0, color: "#F1EFE6" },
+  eyebrow: { fontFamily: F.mono, fontSize: 11, letterSpacing: "0.12em", color: C.gold, marginBottom: 4 },
+  h1: { fontFamily: F.head, fontWeight: 700, fontSize: 26, letterSpacing: "0.03em", margin: 0, color: C.text },
   headerBtns: { display: "flex", gap: 8, alignItems: "center" },
-  iconBtn: { display: "flex", alignItems: "center", gap: 6, background: "#141d17", border: "1px solid #2a352d", color: "#D8CFB6", fontSize: 12, fontWeight: 600, padding: "7px 12px", borderRadius: 6, cursor: "pointer" },
-  gaugeRow: { display: "flex", gap: 12, flexWrap: "wrap" },
-  gaugeCard: { flex: "1 1 340px", background: "#141d17", border: "1px solid #26302a", borderRadius: 8, padding: "14px 16px" },
-  gaugeLabel: { fontFamily: "'Oswald', sans-serif", fontSize: 12, letterSpacing: "0.05em", color: "#D8CFB6", marginBottom: 8, textTransform: "uppercase" },
-  gaugeTrack: { position: "relative", height: 10, borderRadius: 5, background: "#1c261f", overflow: "hidden" },
-  gaugeTickCenter: { position: "absolute", left: "40%", top: 0, bottom: 0, width: 1, background: "#3a4a3e", zIndex: 1 },
-  gaugeFill: { height: "100%", borderRadius: 5, transition: "width .4s ease" },
-  gaugeNeedle: { position: "absolute", top: -3, width: 2, height: 16, background: "#F1EFE6", transform: "translateX(-1px)" },
-  gaugeFoot: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, fontSize: 11, color: "#6E8078" },
-  scarcityCards: { display: "flex", gap: 8, flexWrap: "wrap" },
-  scarcityChip: { border: "1px solid", borderRadius: 8, padding: "10px 14px", minWidth: 76, textAlign: "center" },
-  scarcityPos: { fontFamily: "'Oswald', sans-serif", fontSize: 11, letterSpacing: "0.08em", color: "#8CA098" },
-  scarcityHint: { fontSize: 9.5, color: "#6E8078", marginTop: 2 },
-  settingsPanel: { display: "flex", gap: 24, flexWrap: "wrap", background: "#141d17", border: "1px solid #26302a", borderRadius: 8, padding: 16, marginBottom: 16 },
-  settingsCol: { minWidth: 160 },
-  settingsHeading: { fontFamily: "'Oswald', sans-serif", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", color: "#D8A63D", marginBottom: 8 },
-  settingsLabel: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#D8CFB6", marginBottom: 8, gap: 8 },
-  settingsInput: { width: 60, background: "#0F1712", border: "1px solid #2a352d", color: "#F1EFE6", borderRadius: 4, padding: "3px 6px" },
-  rosterGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 14px" },
-  rosterLabel: { display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#D8CFB6" },
-  rosterInput: { width: 44, background: "#0F1712", border: "1px solid #2a352d", color: "#F1EFE6", borderRadius: 4, padding: "2px 4px" },
-  teamListEdit: { display: "flex", flexDirection: "column", gap: 5, maxHeight: 150, overflowY: "auto" },
-  teamEditRow: { display: "flex", alignItems: "center", gap: 6 },
-  starBtn: { background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" },
-  teamNameInput: { flex: 1, background: "#0F1712", border: "1px solid #2a352d", color: "#F1EFE6", borderRadius: 4, padding: "3px 6px", fontSize: 12 },
-  teamStrip: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6, marginBottom: 14 },
-  teamCard: { flex: "0 0 auto", minWidth: 112, background: "#141d17", border: "1px solid", borderRadius: 7, padding: "8px 10px" },
-  teamName: { display: "flex", alignItems: "center", fontSize: 11.5, fontWeight: 600, color: "#D8CFB6", marginBottom: 4, whiteSpace: "nowrap" },
-  teamBudgetRow: { display: "flex", alignItems: "baseline", gap: 5 },
-  teamSub: { fontSize: 9.5, color: "#6E8078", marginTop: 3 },
-  filterBar: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 },
-  searchWrap: { display: "flex", alignItems: "center", gap: 6, background: "#141d17", border: "1px solid #26302a", borderRadius: 6, padding: "6px 10px", minWidth: 180 },
-  searchInput: { background: "none", border: "none", color: "#F1EFE6", fontSize: 12.5, width: "100%" },
-  posTabs: { display: "flex", gap: 4 },
-  posTab: { background: "#141d17", border: "1px solid #26302a", color: "#8CA098", fontSize: 11, fontWeight: 600, padding: "5px 9px", borderRadius: 5, cursor: "pointer" },
-  posTabActive: { background: "#D8A63D", color: "#0F1712", borderColor: "#D8A63D" },
-  hideToggle: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#8CA098" },
-  addPlayerBtn: { marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, background: "none", border: "1px dashed #3a4a3e", color: "#8CA098", fontSize: 11.5, padding: "6px 10px", borderRadius: 6, cursor: "pointer" },
-  addRow: { display: "flex", gap: 8, alignItems: "center", background: "#141d17", border: "1px solid #26302a", borderRadius: 7, padding: 10, marginBottom: 10 },
-  addInput: { background: "#0F1712", border: "1px solid #2a352d", color: "#F1EFE6", borderRadius: 4, padding: "6px 8px", fontSize: 12.5, flex: 1 },
-  addSelect: { background: "#0F1712", border: "1px solid #2a352d", color: "#F1EFE6", borderRadius: 4, padding: "6px 8px", fontSize: 12.5 },
-  addConfirmBtn: { background: "#D8A63D", color: "#0F1712", border: "none", borderRadius: 5, padding: "7px 14px", fontWeight: 700, fontSize: 12, cursor: "pointer" },
-  addCancelBtn: { background: "none", border: "none", color: "#8CA098", cursor: "pointer", padding: 6 },
-  tableWrap: { overflowX: "auto", border: "1px solid #26302a", borderRadius: 8 },
-  table: { width: "100%", borderCollapse: "collapse", minWidth: 820 },
-  th: { textAlign: "left", fontFamily: "'Oswald', sans-serif", fontSize: 11, letterSpacing: "0.05em", textTransform: "uppercase", color: "#8CA098", background: "#141d17", padding: "9px 12px", borderBottom: "1px solid #26302a", position: "sticky", top: 0 },
-  thNum: { textAlign: "right", fontFamily: "'Oswald', sans-serif", fontSize: 11, letterSpacing: "0.05em", textTransform: "uppercase", color: "#8CA098", background: "#141d17", padding: "9px 12px", borderBottom: "1px solid #26302a", position: "sticky", top: 0 },
-  td: { padding: "8px 12px", borderBottom: "1px solid #1c261f", fontSize: 12.5 },
-  tdName: { padding: "8px 12px", borderBottom: "1px solid #1c261f", fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" },
-  tdNum: { padding: "8px 12px", borderBottom: "1px solid #1c261f", fontSize: 12.5, textAlign: "right", fontFamily: "'IBM Plex Mono', monospace" },
-  tdDraft: { padding: "6px 12px", borderBottom: "1px solid #1c261f" },
-  posPill: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, fontWeight: 700, color: "#8CA098", border: "1px solid #2a352d", borderRadius: 4, padding: "1px 6px" },
-  draftForm: { display: "flex", gap: 5, alignItems: "center", justifyContent: "flex-end" },
-  priceInput: { width: 48, background: "#0F1712", border: "1px solid #2a352d", color: "#F1EFE6", borderRadius: 4, padding: "5px 6px", fontSize: 12 },
-  teamSelect: { background: "#0F1712", border: "1px solid #2a352d", color: "#F1EFE6", borderRadius: 4, padding: "5px 6px", fontSize: 11.5, maxWidth: 110 },
-  draftBtn: { background: "#3E6B4F", color: "#F1EFE6", border: "none", borderRadius: 4, padding: "6px 10px", fontSize: 11.5, fontWeight: 700, cursor: "pointer" },
-  removeBtn: { background: "none", border: "none", color: "#4a5850", cursor: "pointer", padding: 4 },
-  draftedInfo: { display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end", fontSize: 11.5 },
-  undoBtn: { background: "none", border: "none", color: "#4a5850", cursor: "pointer", padding: 3 },
-  footNote: { fontSize: 11, color: "#6E8078", marginTop: 14, lineHeight: 1.5, maxWidth: 820 },
+  gaugeRow: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 },
+  addRow: { ...ui.panel, display: "flex", gap: 8, alignItems: "center", padding: 10, marginBottom: 10 },
+  addConfirm: { background: C.gold, color: C.bg, border: "none", borderRadius: 5, padding: "7px 14px", fontWeight: 700, fontSize: 12, cursor: "pointer" },
+  addCancel: { background: "none", border: "none", color: C.dim, cursor: "pointer", padding: 6 },
+  footNote: { fontSize: 11, color: C.dimmer, marginTop: 14, lineHeight: 1.6, maxWidth: 860 },
+  toast: {
+    position: "fixed", bottom: 22, left: "50%", transform: "translateX(-50%)",
+    background: C.panelHi, border: `1px solid ${C.gold}`, color: C.text,
+    padding: "10px 18px", borderRadius: 8, fontSize: 13, zIndex: 90, cursor: "pointer",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.5)", animation: "riseIn .18s ease",
+  },
 };

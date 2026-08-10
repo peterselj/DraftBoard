@@ -1,0 +1,126 @@
+import React from "react";
+import { Star } from "lucide-react";
+import { SCARCITY_POS } from "../lib/draftMath.js";
+import { C, F, ui, money, fmtMult } from "../theme.js";
+
+// Two readings, deliberately kept apart:
+//   Room pressure  — league-wide money vs. value still on the board (global).
+//   Scarcity chips — each position's supply/demand vs. where it started (local).
+// Conflating them gives bad in-draft advice: "we had to overpay" means
+// something different in each case.
+export function PressureGauge({ live }) {
+  const mult = live.budgetInflationMult;
+  const pct = Math.min(100, Math.max(0, ((mult - 0.6) / (1.6 - 0.6)) * 100));
+  const tone = mult >= 1.08 ? "hot" : mult <= 0.92 ? "cold" : "even";
+  const fill = tone === "hot" ? C.red : tone === "cold" ? C.teal : C.gold;
+  const label = tone === "hot" ? C.redLt : tone === "cold" ? C.tealLt : C.goldLt;
+
+  return (
+    <div style={styles.gaugeCard}>
+      <div style={styles.gaugeLabel}>
+        ROOM PRESSURE{" "}
+        <span style={{ opacity: 0.6, fontWeight: 400 }}>— league-wide budget vs. value left</span>
+      </div>
+      <div style={styles.gaugeTrack}>
+        <div style={styles.gaugeTickCenter} />
+        <div style={{ ...styles.gaugeFill, width: `${pct}%`, background: fill }} />
+        <div style={{ ...styles.gaugeNeedle, left: `${pct}%` }} />
+      </div>
+      <div style={styles.gaugeFoot}>
+        <span>0.6x</span>
+        <span style={{ fontFamily: F.mono, fontSize: 20, fontWeight: 700, color: label }}>{fmtMult(mult)}</span>
+        <span>1.6x</span>
+      </div>
+      <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>
+        {tone === "hot" && "Room is spending hot — dollars are worth less than sheet value."}
+        {tone === "cold" && "Room is cold — dollars are worth more than sheet value. Good time to buy."}
+        {tone === "even" && "Room is roughly on pace with projections."}
+      </div>
+    </div>
+  );
+}
+
+export function ScarcityChips({ live }) {
+  return (
+    <div style={styles.chips}>
+      {SCARCITY_POS.map((pos) => {
+        const m = live.scarcityMult[pos] || 1;
+        const tone = m >= 1.25 ? "hot" : m <= 0.8 ? "cold" : "even";
+        return (
+          <div
+            key={pos}
+            style={{
+              ...styles.chip,
+              borderColor: tone === "hot" ? "#5b2c28" : tone === "cold" ? "#204d47" : "#3a4a3e",
+              background: tone === "hot" ? "#221514" : tone === "cold" ? "#0f2320" : "#141d17",
+            }}
+          >
+            <div style={styles.chipPos}>{pos}</div>
+            <div
+              style={{
+                fontFamily: F.mono, fontSize: 18, fontWeight: 700,
+                color: tone === "hot" ? C.redLt : tone === "cold" ? C.tealLt : C.bone,
+              }}
+            >
+              {fmtMult(m)}
+            </div>
+            <div style={styles.chipHint}>
+              {tone === "hot" ? "drying up" : tone === "cold" ? "plenty left" : "on pace"}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function TeamStrip({ teams, live }) {
+  return (
+    <div style={styles.strip}>
+      {teams.map((t) => {
+        const st = live.teamStats[t.id];
+        if (!st) return null;
+        const tight = st.remaining <= 15;
+        return (
+          <div key={t.id} style={{ ...styles.teamCard, borderColor: t.isMe ? C.gold : C.line }}>
+            <div style={styles.teamName}>
+              {t.isMe && <Star size={11} style={{ marginRight: 4, color: C.gold }} fill={C.gold} />}
+              {t.name}
+            </div>
+            <div style={styles.teamBudgetRow}>
+              <span style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 16, color: tight ? C.redLt : C.text }}>
+                {money(st.remaining)}
+              </span>
+              <span style={{ fontSize: 10, color: C.dimmer }}>left</span>
+            </div>
+            <div style={styles.teamSub}>
+              max {money(Math.max(1, st.maxBid))} · {st.breakdown.openSlotsTotal} open
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const styles = {
+  gaugeCard: { ...ui.panel, flex: "1 1 340px", padding: "14px 16px" },
+  gaugeLabel: {
+    fontFamily: F.head, fontSize: 12, letterSpacing: "0.05em", color: C.bone,
+    marginBottom: 8, textTransform: "uppercase",
+  },
+  gaugeTrack: { position: "relative", height: 10, borderRadius: 5, background: "#1c261f", overflow: "hidden" },
+  gaugeTickCenter: { position: "absolute", left: "40%", top: 0, bottom: 0, width: 1, background: "#3a4a3e", zIndex: 1 },
+  gaugeFill: { height: "100%", borderRadius: 5, transition: "width .4s ease" },
+  gaugeNeedle: { position: "absolute", top: -3, width: 2, height: 16, background: C.text, transform: "translateX(-1px)" },
+  gaugeFoot: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, fontSize: 11, color: C.dimmer },
+  chips: { display: "flex", gap: 8, flexWrap: "wrap" },
+  chip: { border: "1px solid", borderRadius: 8, padding: "10px 14px", minWidth: 76, textAlign: "center" },
+  chipPos: { fontFamily: F.head, fontSize: 11, letterSpacing: "0.08em", color: C.dim },
+  chipHint: { fontSize: 9.5, color: C.dimmer, marginTop: 2 },
+  strip: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6, marginBottom: 14 },
+  teamCard: { ...ui.panel, flex: "0 0 auto", minWidth: 112, border: "1px solid", padding: "8px 10px" },
+  teamName: { display: "flex", alignItems: "center", fontSize: 11.5, fontWeight: 600, color: C.bone, marginBottom: 4, whiteSpace: "nowrap" },
+  teamBudgetRow: { display: "flex", alignItems: "baseline", gap: 5 },
+  teamSub: { fontSize: 9.5, color: C.dimmer, marginTop: 3 },
+};
