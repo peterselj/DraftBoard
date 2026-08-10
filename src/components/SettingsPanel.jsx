@@ -1,10 +1,24 @@
 import React, { useState } from "react";
 import { Star, ClipboardPaste } from "lucide-react";
+import { SCORING_PRESETS, DEFAULT_SCORING } from "../lib/scoring.js";
 import { C, F, ui } from "../theme.js";
+
+// The handful of scoring settings that actually move dollar values. The rest
+// of the rules live in scoring.js and can be surfaced here if they ever matter.
+const SCORING_FIELDS = [
+  { key: "rec", label: "pts / catch" },
+  { key: "passTd", label: "pass TD" },
+  { key: "tePremium", label: "TE bonus / catch" },
+];
 
 export default function SettingsPanel({
   settings, teams, updateRoster, updateNumTeams, renameTeam, setMyTeam, setBudget, applyTeamNames,
+  setScoring,
 }) {
+  const scoring = settings.scoring || DEFAULT_SCORING;
+  const activePreset = Object.entries(SCORING_PRESETS).find(
+    ([, preset]) => SCORING_FIELDS.every((f) => preset[f.key] === scoring[f.key])
+  )?.[0] || "custom";
   const [bulk, setBulk] = useState("");
   const bulkNames = bulk.split("\n").map((s) => s.trim()).filter(Boolean);
 
@@ -44,6 +58,37 @@ export default function SettingsPanel({
             </label>
           ))}
         </div>
+      </div>
+
+      <div style={styles.col}>
+        <div style={ui.heading}>Scoring</div>
+        <div style={styles.help}>
+          Drives the bottom-up model — change it and every dollar value
+          recalculates.
+        </div>
+        <select
+          style={{ ...ui.input, width: "100%" }}
+          value={activePreset}
+          onChange={(e) => {
+            const preset = SCORING_PRESETS[e.target.value];
+            if (preset) setScoring(preset);
+          }}
+        >
+          {Object.keys(SCORING_PRESETS).map((name) => (
+            <option key={name} value={name}>{name}</option>
+          ))}
+          {activePreset === "custom" && <option value="custom">custom</option>}
+        </select>
+        {SCORING_FIELDS.map((f) => (
+          <label key={f.key} style={styles.label}>
+            {f.label}
+            <input
+              type="number" step="0.5" style={styles.input}
+              value={scoring[f.key]}
+              onChange={(e) => setScoring({ ...scoring, [f.key]: parseFloat(e.target.value) || 0 })}
+            />
+          </label>
+        ))}
       </div>
 
       <div style={styles.col}>

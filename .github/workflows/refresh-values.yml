@@ -1,0 +1,49 @@
+name: Refresh player values
+
+# The app can pull live values in the browser on its own (both sources send
+# permissive CORS headers). This job keeps the committed snapshot current so
+# there's always a good offline fallback, and so a source going down doesn't
+# leave the board with stale numbers on draft night.
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: "Season to fetch (defaults to the current year)"
+        required: false
+        type: string
+  schedule:
+    # 09:00 UTC daily through the draft-season months.
+    - cron: "0 9 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Fetch current values
+        run: npm run refresh -- ${{ inputs.season }}
+
+      - name: Sanity-check the result before committing
+        run: npm test
+
+      - name: Commit if anything changed
+        run: |
+          if [[ -z "$(git status --porcelain public/data)" ]]; then
+            echo "Values unchanged — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          git commit -m "Refresh player values ($(date -u +%Y-%m-%d))"
+          git push

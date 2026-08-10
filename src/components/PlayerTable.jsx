@@ -72,13 +72,17 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, onR
         {v.market ? money(v.market) : <span style={{ color: C.dimmer }}>—</span>}
       </td>
       <td style={{ ...styles.tdNum, color: deltaColor(v.edge) }}>
-        {v.market ? `${v.edge > 0 ? "+" : ""}${Math.round(v.edge)}` : ""}
+        {v.market
+          ? `${v.edge > 0 ? "+" : v.edge < 0 ? "−" : ""}${Math.abs(Math.round(v.edge))}`
+          : ""}
       </td>
       <td style={styles.tdNum}>
         <span style={{ fontWeight: 700 }}>{money(v.live)}</span>
-        <span style={{ fontSize: 10, color: deltaColor(v.live - v.model), marginLeft: 5 }}>
-          {v.live - v.model > 0 ? "+" : ""}{Math.round(v.live - v.model)}
-        </span>
+        {Math.round(v.live - v.model) !== 0 && (
+          <span style={{ fontSize: 10, color: deltaColor(v.live - v.model), marginLeft: 5 }}>
+            {v.live > v.model ? "+" : "−"}{Math.abs(Math.round(v.live - v.model))}
+          </span>
+        )}
       </td>
       <td style={styles.tdDraft}>
         {p.drafted ? (

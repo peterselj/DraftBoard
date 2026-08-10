@@ -13,6 +13,8 @@
 // 12-team/2-starter league) instead of counting every remaining player
 // equally. Backlogged in FEATURE_BACKLOG.md.
 
+import { DEFAULT_SCORING } from "./scoring.js";
+
 export const POSITIONS = ["QB", "RB", "WR", "TE", "K", "DEF"];
 export const FLEX_ELIGIBLE = ["RB", "WR", "TE"];
 export const SCARCITY_POS = ["QB", "RB", "WR", "TE"];
@@ -21,6 +23,7 @@ export const DEFAULT_SETTINGS = {
   numTeams: 12,
   budget: 200,
   roster: { QB: 1, RB: 2, WR: 3, TE: 1, FLEX: 1, K: 1, DEF: 1, BENCH: 6 },
+  scoring: DEFAULT_SCORING,
 };
 
 export function defaultTeams(numTeams) {
@@ -117,8 +120,16 @@ export function computeBaselineFromCounts(settings, supply) {
 }
 
 /** Live budget-inflation + positional-scarcity multipliers given the
- *  current state of the draft. */
-export function computeLive(players, teams, settings, baselineRatio) {
+ *  current state of the draft.
+ *
+ *  `baseValueOf` says what a player is worth standalone. It must be the same
+ *  currency the board prices in — the model value when we have projections —
+ *  otherwise inflation measures dollars against a yardstick that never
+ *  summed to the budget in the first place, and reads hot from pick one. */
+export function computeLive(
+  players, teams, settings, baselineRatio,
+  baseValueOf = (p) => p.model ?? p.projected
+) {
   const { roster, budget } = settings;
 
   let totalRemainingBudget = 0;
@@ -147,7 +158,7 @@ export function computeLive(players, teams, settings, baselineRatio) {
   const competitiveDollars = Math.max(0, totalRemainingBudget - totalOpenSlots);
   const undraftedValueSum = players
     .filter((p) => !p.drafted)
-    .reduce((s, p) => s + Math.max(0, p.projected - 1), 0);
+    .reduce((s, p) => s + Math.max(0, (baseValueOf(p) ?? 1) - 1), 0);
   const budgetInflationMult = undraftedValueSum > 0 ? competitiveDollars / undraftedValueSum : 1;
 
   const liveSupply = {};

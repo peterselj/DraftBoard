@@ -1,10 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { RotateCcw, Settings2, X, Undo2, Keyboard } from "lucide-react";
-import seedData from "./data/players2025.json";
 import {
   POSITIONS, FLEX_ELIGIBLE, DEFAULT_SETTINGS, defaultTeams,
   computeBaselineFromCounts, positionCounts, computeLive, adjustedValue,
 } from "./lib/draftMath.js";
+import { computeModelValues } from "./lib/valueModel.js";
+import { DEFAULT_SCORING } from "./lib/scoring.js";
+import {
+  seedPlayers, toAppPlayer, loadPublishedDataset, refreshFromLiveSources,
+  mergeValuesIntoPool, currentSeason,
+} from "./lib/dataSource.js";
+import { applyImport } from "./lib/importParse.js";
 import { loadDraft, saveDraft, clearDraft } from "./lib/storage.js";
 import { C, F, ui, money } from "./theme.js";
 import ConfirmDialog from "./components/ConfirmDialog.jsx";
@@ -12,13 +18,10 @@ import QuickEntry from "./components/QuickEntry.jsx";
 import FilterBar from "./components/FilterBar.jsx";
 import PlayerTable from "./components/PlayerTable.jsx";
 import SettingsPanel from "./components/SettingsPanel.jsx";
+import DataPanel from "./components/DataPanel.jsx";
 import { PressureGauge, ScarcityChips, TeamStrip } from "./components/Dashboard.jsx";
 
-const freshPlayers = () =>
-  seedData.players.map((p) => ({
-    ...p, drafted: false, paid: null, draftedBy: null,
-    snapAdjValue: null, snapBudgetMult: null, snapScarcityMult: null,
-  }));
+const freshPlayers = seedPlayers;
 
 const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper"];
 
@@ -48,6 +51,8 @@ export default function App() {
   const [draftInputs, setDraftInputs] = useState({});
   const [confirm, setConfirm] = useState(null);
   const [toast, setToast] = useState(null);
+  const [dataMeta, setDataMeta] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const quickRef = useRef(null);
   const searchRef = useRef(null);
@@ -56,42 +61,88 @@ export default function App() {
 
   // ---- persistence ---------------------------------------------------------
   useEffect(() => {
+    let cancelled = false;
     const saved = loadDraft();
     if (saved) {
-      if (saved.settings) setSettings(saved.settings);
+      // Scoring settings arrived after the first saved drafts existed.
+      if (saved.settings) setSettings({ scoring: DEFAULT_SCORING, ...saved.settings });
       if (saved.teams) setTeams(saved.teams);
       if (saved.players) setPlayers(saved.players);
       if (saved.picks) setPicks(saved.picks);
       setBaselinePool(saved.baselinePool || positionCounts(saved.players || freshPlayers()));
+      if (saved.dataMeta) setDataMeta(saved.dataMeta);
     }
     setLoaded(true);
+
+    // Pull the published dataset regardless: a fresh board adopts it wholesale,
+    // an in-progress draft just takes the new numbers.
+    loadPublishedDataset(currentSeason())
+      .then((data) => {
+        if (cancelled) return;
+        const incoming = data.players.map(toAppPlayer);
+        const meta = {
+          season: data.season,
+          generated: data.generated,
+          origin: "published values",
+          count: incoming.length,
+        };
+        if (saved?.players?.length) {
+          setPlayers((prev) => mergeValuesIntoPool(prev, incoming));
+        } else {
+          setPlayers(incoming);
+          setBaselinePool(positionCounts(incoming));
+        }
+        setDataMeta(meta);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        console.warn("Falling back to the bundled seed pool:", e.message);
+        setDataMeta((m) => m || {
+          season: currentSeason(),
+          origin: "bundled seed (offline)",
+          notes: ["Couldn't load published values — using the file shipped with the app."],
+        });
+      });
+
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
     if (!loaded) return undefined;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(
-      () => saveDraft({ settings, teams, players, picks, baselinePool }),
+      () => saveDraft({ settings, teams, players, picks, baselinePool, dataMeta }),
       400
     );
     return () => clearTimeout(saveTimer.current);
-  }, [settings, teams, players, picks, baselinePool, loaded]);
+  }, [settings, teams, players, picks, baselinePool, dataMeta, loaded]);
 
   // ---- derived draft state -------------------------------------------------
   const baselineRatio = useMemo(
     () => computeBaselineFromCounts(settings, baselinePool),
     [settings, baselinePool]
   );
+  // Bottom-up dollar values from projections, for this league's exact settings.
+  // Players without projections fall through to their sheet value.
+  const modelValues = useMemo(
+    () => computeModelValues(players, settings).values,
+    [players, settings]
+  );
+  const baseValueOf = useCallback(
+    (p) => modelValues.get(p.id) ?? p.model ?? p.projected,
+    [modelValues]
+  );
+
   const live = useMemo(
-    () => computeLive(players, teams, settings, baselineRatio),
-    [players, teams, settings, baselineRatio]
+    () => computeLive(players, teams, settings, baselineRatio, baseValueOf),
+    [players, teams, settings, baselineRatio, baseValueOf]
   );
   const myTeam = teams.find((t) => t.isMe) || teams[0];
 
   /** The three numbers every row (and the quick-entry preview) needs. */
   const valueOf = useCallback(
     (p) => {
-      const model = p.model ?? p.projected;
+      const model = baseValueOf(p);
       const market = marketValue(p);
       return {
         model,
@@ -100,7 +151,7 @@ export default function App() {
         live: adjustedValue(p, live, model),
       };
     },
-    [live]
+    [live, baseValueOf]
   );
 
   const effectivePos = useMemo(() => {
@@ -144,7 +195,9 @@ export default function App() {
       const p = players.find((x) => x.id === playerId);
       if (!p || p.drafted || !teamId) return false;
       const paid = Math.max(1, parseInt(price, 10) || 1);
-      const snap = adjustedValue(p, live, p.model ?? p.projected);
+      // Snapshot what he was worth at the moment of the pick, so the
+      // over/value verdict doesn't drift as the rest of the draft moves.
+      const snap = valueOf(p).live;
 
       setPlayers((prev) =>
         prev.map((x) =>
@@ -168,7 +221,7 @@ export default function App() {
       flashToast(`${p.name} → ${teamName} · ${money(paid)}`);
       return true;
     },
-    [players, teams, live, flashToast]
+    [players, teams, live, valueOf, flashToast]
   );
 
   const draftFromRow = useCallback(
@@ -322,6 +375,55 @@ export default function App() {
     setDraftInputs((prev) => ({ ...prev, [playerId]: value }));
   }, []);
 
+  // ---- data ----------------------------------------------------------------
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const data = await refreshFromLiveSources(currentSeason());
+      const incoming = data.players.map(toAppPlayer);
+      setPlayers((prev) => mergeValuesIntoPool(prev, incoming));
+      setDataMeta({
+        season: data.season,
+        generated: data.generated,
+        origin: "live from ESPN + Sleeper",
+        count: incoming.length,
+        notes: data.notes,
+      });
+      flashToast(`Refreshed ${incoming.length} players from live sources.`);
+    } catch (e) {
+      // Live fetch blocked (CORS, offline, source down) — fall back to the
+      // snapshot CI publishes alongside the app.
+      try {
+        const data = await loadPublishedDataset(currentSeason());
+        const incoming = data.players.map(toAppPlayer);
+        setPlayers((prev) => mergeValuesIntoPool(prev, incoming));
+        setDataMeta({
+          season: data.season,
+          generated: data.generated,
+          origin: "published values",
+          count: incoming.length,
+          notes: [`Live refresh unavailable (${e.message}) — used the published snapshot.`],
+        });
+        flashToast("Live sources unreachable; loaded the published snapshot.");
+      } catch (inner) {
+        setDataMeta((m) => ({ ...(m || {}), notes: [`Refresh failed: ${inner.message}`] }));
+        flashToast(`Refresh failed: ${inner.message}`);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [flashToast]);
+
+  const handleImport = useCallback(
+    (rows, field) => {
+      const result = applyImport(players, rows, field);
+      setPlayers(result.players);
+      flashToast(`Imported ${result.matched} values into "${field}".`);
+      return result;
+    },
+    [players, flashToast]
+  );
+
   const clearFilters = useCallback(() => {
     setSearch("");
     setSelectedPos(new Set());
@@ -399,10 +501,18 @@ export default function App() {
           setMyTeam={setMyTeam}
           setBudget={(v) => setSettings((s) => ({ ...s, budget: Math.max(1, parseInt(v, 10) || 1) }))}
           applyTeamNames={applyTeamNames}
+          setScoring={(scoring) => setSettings((s) => ({ ...s, scoring }))}
         />
       )}
 
       <TeamStrip teams={teams} live={live} />
+
+      <DataPanel
+        meta={dataMeta}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onImport={handleImport}
+      />
 
       <QuickEntry
         players={players}
@@ -523,6 +633,7 @@ function GlobalStyle() {
       ::-webkit-scrollbar { height: 8px; width: 8px; }
       ::-webkit-scrollbar-thumb { background: #2a352d; border-radius: 4px; }
       @keyframes riseIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+      @keyframes spin { to { transform: rotate(360deg); } }
     `}</style>
   );
 }
