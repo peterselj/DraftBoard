@@ -1,13 +1,15 @@
 {
-  "name": "the-draft-room",
+  "name": "draft-board",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "refresh-data": "node scripts/gen_seed.mjs"
+    "test": "node --test \"test/**/*.test.js\"",
+    "refresh": "node scripts/refresh.mjs",
+    "refresh:seed": "node scripts/gen_seed.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.383.0",
