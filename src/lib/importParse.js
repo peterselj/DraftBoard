@@ -11,6 +11,53 @@ import { normalizeName, playerKey } from "./names.js";
 const POSITIONS = new Set(["QB", "RB", "WR", "TE", "K", "DEF", "DST", "D/ST"]);
 const MONEY = /^\$?-?\d+(\.\d+)?$/;
 
+// Yahoo's draft-analysis table copies out *vertically* — one cell per line,
+// with empty cells omitted entirely rather than left blank:
+//
+//   Jahmyr Gibbs
+//   Det - RB          <- team + position, the reliable record marker
+//   Q                 <- injury flag, sometimes absent
+//   1                 <- rank
+//   100%              <- % drafted
+//   73.3              <- Avg $   <- the one we want
+//   64                <- Proj $
+//
+// Positional column mapping is hopeless when blank cells vanish, but the
+// "TEAM - POS" line anchors each record, and the money figures reliably follow
+// the percentage. That's enough to read it without asking anyone to reshape a
+// spreadsheet five minutes before a draft.
+const TEAM_POS = /^([A-Za-z.]{2,4})\s*-\s*(QB|RB|WR|TE|K|DEF|DST|D\/ST)$/i;
+const PERCENT = /^\d{1,3}(\.\d+)?%$/;
+
+export function parseVerticalBlocks(lines) {
+  const rows = [];
+  for (let i = 0; i < lines.length; i++) {
+    const m = TEAM_POS.exec(lines[i]);
+    if (!m || i === 0) continue;
+    const name = lines[i - 1];
+    if (!name || MONEY.test(name) || TEAM_POS.test(name)) continue;
+
+    // Collect the record's numbers: everything until the next record's name.
+    const numbers = [];
+    let sawPercent = false;
+    let percentAt = -1;
+    for (let j = i + 1; j < lines.length; j++) {
+      const line = lines[j];
+      if (TEAM_POS.test(line)) break;            // next record started
+      if (PERCENT.test(line)) { sawPercent = true; percentAt = numbers.length; continue; }
+      if (MONEY.test(line)) { numbers.push(parseFloat(line.replace("$", ""))); continue; }
+      if (/^[A-Za-z]{1,3}$/.test(line)) continue; // injury flag (Q, O, IR…)
+      if (numbers.length > 0) break;              // hit the next player's name
+    }
+    if (numbers.length === 0) continue;
+
+    // Money follows the % drafted column; before that it's ranks.
+    const value = sawPercent && numbers.length > percentAt ? numbers[percentAt] : numbers[numbers.length - 1];
+    rows.push({ name, pos: normalizePos(m[2]), value: Math.round(value * 10) / 10, candidates: numbers });
+  }
+  return rows;
+}
+
 function detectDelimiter(text) {
   const line = text.split(/\r?\n/).find((l) => l.trim()) || "";
   const counts = { "\t": 0, ",": 0, ";": 0, "|": 0 };
@@ -31,6 +78,22 @@ export function parseImport(text) {
   const delim = detectDelimiter(text);
   const lines = String(text || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (lines.length === 0) return { rows: [], warnings: ["Nothing to import."], delimiter: delim };
+
+  // Vertical paste (Yahoo and friends) — try it before column detection,
+  // since these pastes have almost no delimiters to detect.
+  const delimitedLines = lines.filter((l) => l.includes(delim)).length;
+  if (delimitedLines < lines.length / 2) {
+    const rows = parseVerticalBlocks(lines);
+    if (rows.length > 0) {
+      return {
+        rows,
+        warnings,
+        layout: "vertical",
+        delimiter: null,
+        hadHeader: false,
+      };
+    }
+  }
 
   const cells = lines.map((l) => l.split(delim).map((c) => c.trim().replace(/^"|"$/g, "")));
 

@@ -80,14 +80,50 @@ That was a real bug: the untouched board showed 1.28x room pressure before
 anybody had spent a dollar. `test/integration.test.js` now pins an untouched
 board at 1.00x.
 
-## Known limitation
+## Scarcity: value on the board, not bodies
 
-Scarcity is a raw head-count ratio and can't see tiers. Losing the top 3 RBs
-while 25 replacement-level RBs remain barely moves the multiplier, even though
-the position is meaningfully thinner. A tier-aware version would weight supply
-by roster-relevant quality — count RB1–24 in a 12-team/2-starter league rather
-than every remaining body. Tracked in `FEATURE_BACKLOG.md`.
+Scarcity asks "how hard is it to fill a slot at this position now, versus at
+the start?" Both halves of that ratio matter:
 
-Note that the model's replacement-level logic *already* knows where the cliff
-is; it's only the live scarcity multiplier that doesn't. That's the most likely
-place to reuse existing code when this gets fixed.
+```
+demand[pos]   = open dedicated slots + this position's share of open FLEX slots
+supply[pos]   = Σ (model value − 1) over undrafted players at the position
+scarcity[pos] = (demand/supply now) / (demand/supply at draft start)
+```
+
+**Supply is measured in dollars, not head count.** This was the original
+"can't see tiers" limitation, and counting value dissolves it without having to
+define a tier at all. Take the top four RBs off a 130-deep board:
+
+| | head count | value |
+| --- | --- | --- |
+| supply change | 133 → 129 (−3%) | $990 → $749 (−24%) |
+| demand change | −4 slots (−17%) | −4 slots (−17%) |
+| reported scarcity | **0.94x — RB got *easier*** | **1.17x — RB got harder** |
+
+The head-count version was actively misleading: it saw four slots filled and
+almost no supply lost, and concluded the position had loosened. Counting
+dollars says what everyone at the table already knows.
+
+The same arithmetic handles the cases a tier system would need special rules
+for. Four replacement-level RBs leaving barely moves supply, so scarcity
+barely moves. A stud stashed on someone's bench drains supply without reducing
+starter demand, so the position tightens — correctly, because that player is
+gone and nobody's starting requirement got easier.
+
+**Price paid doesn't enter into it.** What leaves the board is the player's
+value, whatever he cost. Price moves the *money* gauge instead. That split is
+the whole point: a stud going for $1 makes the position scarcer *and* leaves
+the room with surplus cash, and those are two different facts that should be
+readable separately.
+
+**Slot type matters, which is why picks are attributed to teams.**
+`teamSlotBreakdown()` fills each team's dedicated slots first, then FLEX, then
+bench. Aggregated across the league that gives `openDedicated[pos]` and
+`openFlex` — the demand half. Without knowing *who* drafted a player we
+couldn't tell a manager's RB2 (which reduces league-wide RB demand) from his
+fourth RB (which doesn't reduce starter demand at all, and so leaves the
+position just as tight for everyone else).
+
+FLEX demand is shared out in proportion to each position's remaining *value*,
+matching the supply measure.

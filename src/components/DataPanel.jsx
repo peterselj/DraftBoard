@@ -67,9 +67,17 @@ export default function DataPanel({ meta, refreshing, onRefresh, onImport }) {
       {importOpen && (
         <div style={styles.importBox}>
           <div style={styles.help}>
-            Paste rows copied from the elboberto sheet, a site export, anything —
-            name, position, dollar value, in any column order, with or without a
+            Paste rows from the elboberto sheet, a site export, anything — name,
+            position and dollar value in any column order, with or without a
             header. Tabs, commas and semicolons all work.
+            <br />
+            <b style={{ color: C.bone }}>Yahoo:</b> open{" "}
+            <span style={{ fontFamily: F.mono, fontSize: 11 }}>
+              football.fantasysports.yahoo.com/f1/draftanalysis?type=salcap
+            </span>
+            , select the table, copy, paste here. Its one-cell-per-line layout is
+            handled, and <b style={{ color: C.bone }}>Avg $</b> (what people
+            actually paid) is used rather than Yahoo's projected value.
           </div>
           <textarea
             style={styles.textarea}
@@ -102,6 +110,11 @@ export default function DataPanel({ meta, refreshing, onRefresh, onImport }) {
           )}
           {preview?.rows.length > 0 && (
             <div style={styles.previewRows}>
+              {preview.layout === "vertical" && (
+                <span style={{ ...styles.previewChip, borderColor: C.gold, color: C.goldLt }}>
+                  one-cell-per-line layout
+                </span>
+              )}
               {preview.rows.slice(0, 3).map((r, i) => (
                 <span key={i} style={styles.previewChip}>
                   {r.name}{r.pos ? ` · ${r.pos}` : ""} · ${r.value}

@@ -30,7 +30,7 @@ test("an untouched board reads as neutral, not inflated", { skip }, () => {
   const { values } = computeModelValues(players, settings);
   const baseValueOf = (p) => values.get(p.id) ?? p.projected ?? 1;
   const teams = defaultTeams(settings.numTeams);
-  const live = computeLive(players, teams, settings, computeBaseline(settings, players), baseValueOf);
+  const live = computeLive(players, teams, settings, computeBaseline(settings, players, baseValueOf), baseValueOf);
 
   assert.ok(Math.abs(live.budgetInflationMult - 1) < 0.05,
     `inflation should start near 1.00x, got ${live.budgetInflationMult.toFixed(2)}x`);
@@ -45,7 +45,7 @@ test("paying over the odds early makes the rest of the room cheaper", { skip }, 
   const { values } = computeModelValues(players, settings);
   const baseValueOf = (p) => values.get(p.id) ?? p.projected ?? 1;
   const teams = defaultTeams(settings.numTeams);
-  const baseline = computeBaseline(settings, players);
+  const baseline = computeBaseline(settings, players, baseValueOf);
   const before = computeLive(players, teams, settings, baseline, baseValueOf);
 
   // Every team blows a third of its budget on one player.

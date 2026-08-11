@@ -92,8 +92,11 @@ const styles = {
   },
   searchInput: { background: "none", border: "none", color: C.text, fontSize: 12.5, width: "100%", outline: "none" },
   tabs: { display: "flex", gap: 4, flexWrap: "wrap" },
+  // Borders are split into shorthand + explicit colour so that toggling a
+  // variant off restores the base colour instead of resetting it to black.
+  // See the note in theme.js.
   tab: {
-    background: C.panel, border: `1px solid ${C.line}`, color: C.dim,
+    background: C.panel, border: "1px solid", borderColor: C.line, color: C.dim,
     fontSize: 11, fontWeight: 600, padding: "5px 9px", borderRadius: 5,
     cursor: "pointer", fontFamily: F.body,
   },
@@ -102,13 +105,13 @@ const styles = {
   flexTab: { marginLeft: 6, letterSpacing: "0.04em" },
   toggle: {
     display: "flex", alignItems: "center", gap: 6, background: C.panel,
-    border: `1px solid ${C.line}`, color: C.dim, fontSize: 11.5,
+    border: "1px solid", borderColor: C.line, color: C.dim, fontSize: 11.5,
     padding: "6px 10px", borderRadius: 6, cursor: "pointer",
   },
   toggleOn: { background: C.gold, color: C.bg, borderColor: C.gold, fontWeight: 700 },
   addBtn: {
     marginLeft: "auto", display: "flex", alignItems: "center", gap: 5,
-    background: "none", border: `1px dashed ${C.line2}`, color: C.dim,
+    background: "none", border: "1px dashed", borderColor: C.line2, color: C.dim,
     fontSize: 11.5, padding: "6px 10px", borderRadius: 6, cursor: "pointer",
   },
 };

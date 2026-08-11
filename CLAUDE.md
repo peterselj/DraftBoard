@@ -30,6 +30,17 @@ public/data/         — runtime-fetched values JSON, refreshed by CI (no rebuil
 scripts/             — data refresh pipeline (sources/ + refresh.mjs)
 ```
 
+## Gotchas
+
+- **Never use the `border: "1px solid <colour>"` shorthand in a style object
+  that a variant overrides.** React removes longhands it no longer sees but
+  leaves the shorthand, so toggling a variant off resets the colour to black.
+  Split it: `border: "1px solid"` + an always-present `borderColor`.
+- **Bump `SCHEMA_VERSION` in `src/lib/storage.js` when the *meaning* of a
+  persisted field changes, not just its shape.** Saved drafts are live data;
+  silently reinterpreting old units is worse than discarding them. The
+  head-count → dollars change in the scarcity baseline is the cautionary tale.
+
 ## Two-number model (important)
 
 `model $` is derived bottom-up from projected fantasy points for *this* league's settings.

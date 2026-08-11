@@ -66,14 +66,70 @@ Names are matched ignoring punctuation and suffixes, so `Marvin Harrison`
 finds `Marvin Harrison Jr.` and `A.J. Brown` matches `AJ Brown`. Anything
 unmatched is listed explicitly rather than silently dropped.
 
-## Yahoo
+## Getting Yahoo's auction values — step by step
 
-Yahoo's `draftanalysis` endpoint exposes `average_cost`, but only behind
-OAuth2 with a registered application — there's no unauthenticated path. Rather
-than make the app carry an OAuth flow for one market column, use the paste
-import above. If a registered app is ever worth setting up, the fetch belongs
-in `src/lib/sources/yahoo.js` behind env credentials, following the shape of
-the other two source modules.
+Takes about a minute. No login, no account, no API key.
+
+1. **Open the page.** Go to
+   [football.fantasysports.yahoo.com/f1/draftanalysis?type=salcap](https://football.fantasysports.yahoo.com/f1/draftanalysis?type=salcap)
+   — that's Yahoo's public Draft Analysis with the **Salary Cap** tab already
+   selected. (If you land on the standard tab, click **Salary Cap** at the top.)
+   You should see columns: Player, Rank, Pos Rank, CER, %Drafted, **Avg $**,
+   Proj $.
+
+2. **Show more players.** It loads the top ~25. Scroll to the bottom and click
+   through to the next page, or use the position filters (QB / RB / WR / TE / K
+   / DEF) to walk through each group. You can paste in several batches — each
+   import updates the players it recognizes and leaves everything else alone.
+
+3. **Select the table and copy.** Click just above the "Player" header, drag to
+   the last row you want, and press Ctrl+C. Grabbing extra page furniture is
+   fine — headers, nav, and stray text are ignored.
+
+4. **Paste it in.** In Draft Board click **Import**, paste into the box, set
+   *import into* → **yahoo**, and click apply. The preview shows the first few
+   parsed rows so you can confirm before committing.
+
+**Which number gets used:** **Avg $** — what Yahoo drafters actually paid — not
+Yahoo's own **Proj $** projection. We already do our own projection; the point
+of importing is to capture the market.
+
+**Why it can't be automatic:** Yahoo renders that table with JavaScript after
+the page loads, so there's nothing to fetch server-side, and the page sends no
+CORS header, so the browser can't read it either. Their official API does
+expose `average_cost` via `draftanalysis`, but only behind OAuth2 with a
+registered application — a lot of moving parts for one column. If it's ever
+worth it, the fetch belongs in `src/lib/sources/yahoo.js` behind env
+credentials, shaped like the other source modules.
+
+**The paste shape is handled.** Yahoo's table copies out vertically — one cell
+per line, with empty cells dropped entirely:
+
+```
+Jahmyr Gibbs
+Det - RB       <- team + position, which is how records are found
+Q              <- injury flag, sometimes absent
+1              <- rank
+100%           <- % drafted
+73.3           <- Avg $   <- this is the one taken
+64             <- Proj $
+```
+
+The importer detects this layout, reads the position out of the `Det - RB`
+line, and takes the first dollar figure after the percentage. Name suffixes are
+ignored on both sides, so Yahoo's "James Cook III" finds "James Cook".
+
+## Telling the board which site you're on
+
+**Settings → Drafting on** picks which source fills the **Site $** column and
+what **Edge** is measured against. Set it to the platform your auction actually
+runs on: that's the number on everyone's screen, and it anchors the bidding
+whether or not they've done their own homework — especially if a single team is
+on autodraft.
+
+If the selected platform has no value for a player, the cell shows the
+consensus of the other sources in italics with a `~`, so a fallback is never
+mistaken for the real thing.
 
 ## When a source breaks on draft day
 
