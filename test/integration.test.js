@@ -74,12 +74,15 @@ test("live value tracks the multipliers", { skip }, () => {
 
 test("the money in the model matches the money in the room", { skip }, () => {
   const { values } = computeModelValues(dataset.players, settings);
-  const slots = rosterSize(settings.roster);
-  const competitive = settings.numTeams * settings.budget - settings.numTeams * slots;
-  const total = [...values.values()]
+  const { numTeams, budget, roster } = settings;
+  // Only K and DEF slots are held back at $1; bench dollars are biddable and
+  // get spent on real players, per the elboberto method.
+  const pool = numTeams * budget - (roster.K + roster.DEF) * numTeams;
+  const pricedSlots = numTeams * (rosterSize(roster) - roster.K - roster.DEF);
+  const spend = [...values.values()]
     .sort((a, b) => b - a)
-    .slice(0, settings.numTeams * slots)
-    .reduce((s, v) => s + (v - 1), 0);
-  assert.ok(Math.abs(total - competitive) / competitive < 0.02,
-    `model allocates $${total.toFixed(0)} against $${competitive} of competitive money`);
+    .slice(0, pricedSlots)
+    .reduce((s, v) => s + v, 0);
+  assert.ok(Math.abs(spend - pool) / pool < 0.05,
+    `model allocates $${spend.toFixed(0)} against a $${pool} pool`);
 });

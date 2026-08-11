@@ -31,6 +31,12 @@ const PERCENT = /^\d{1,3}(\.\d+)?%$/;
 
 export function parseVerticalBlocks(lines) {
   const rows = [];
+  // Deep rows on Yahoo have no auction data at all — "294  -  -  1", where the
+  // only bare numbers are the rank and a $1 projection. Without the % column to
+  // mark where the money starts, a "last number wins" guess would import the
+  // *rank* as a dollar value. So when the paste uses percentages at all, a row
+  // without one is skipped rather than guessed at.
+  const usesPercent = lines.some((l) => PERCENT.test(l));
   for (let i = 0; i < lines.length; i++) {
     const m = TEAM_POS.exec(lines[i]);
     if (!m || i === 0) continue;
@@ -50,9 +56,11 @@ export function parseVerticalBlocks(lines) {
       if (numbers.length > 0) break;              // hit the next player's name
     }
     if (numbers.length === 0) continue;
+    if (usesPercent && !sawPercent) continue;
+    if (sawPercent && numbers.length <= percentAt) continue; // no money after the %
 
     // Money follows the % drafted column; before that it's ranks.
-    const value = sawPercent && numbers.length > percentAt ? numbers[percentAt] : numbers[numbers.length - 1];
+    const value = sawPercent ? numbers[percentAt] : numbers[numbers.length - 1];
     rows.push({ name, pos: normalizePos(m[2]), value: Math.round(value * 10) / 10, candidates: numbers });
   }
   return rows;

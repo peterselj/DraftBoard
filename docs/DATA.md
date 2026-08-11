@@ -77,14 +77,20 @@ Takes about a minute. No login, no account, no API key.
    You should see columns: Player, Rank, Pos Rank, CER, %Drafted, **Avg $**,
    Proj $.
 
-2. **Show more players.** It loads the top ~25. Scroll to the bottom and click
-   through to the next page, or use the position filters (QB / RB / WR / TE / K
-   / DEF) to walk through each group. You can paste in several batches — each
-   import updates the players it recognizes and leaves everything else alone.
+2. **Get everyone on one page** by adding `&count=300` to the URL:
+
+   ```
+   https://football.fantasysports.yahoo.com/f1/draftanalysis?type=salcap&pos=ALL&count=300
+   ```
+
+   That's the whole draftable pool in a single table — no paging, no batching.
+   (300 is plenty: a 12-team league rosters ~190 players, and everyone past
+   that is a $1 flier.)
 
 3. **Select the table and copy.** Click just above the "Player" header, drag to
-   the last row you want, and press Ctrl+C. Grabbing extra page furniture is
-   fine — headers, nav, and stray text are ignored.
+   the bottom, Ctrl+C. Grabbing extra page furniture is fine — headers, nav and
+   stray text are ignored. Rows too deep to have auction data (`294 - - 1`) are
+   skipped rather than guessed at, so a full-page select is safe.
 
 4. **Paste it in.** In Draft Board click **Import**, paste into the box, set
    *import into* → **yahoo**, and click apply. The preview shows the first few
@@ -94,13 +100,21 @@ Takes about a minute. No login, no account, no API key.
 Yahoo's own **Proj $** projection. We already do our own projection; the point
 of importing is to capture the market.
 
-**Why it can't be automatic:** Yahoo renders that table with JavaScript after
-the page loads, so there's nothing to fetch server-side, and the page sends no
-CORS header, so the browser can't read it either. Their official API does
-expose `average_cost` via `draftanalysis`, but only behind OAuth2 with a
-registered application — a lot of moving parts for one column. If it's ever
-worth it, the fetch belongs in `src/lib/sources/yahoo.js` behind env
-credentials, shaped like the other source modules.
+**How many players is enough?** A 12-team league with 15–16 roster spots takes
+~190 players. Anything past ~270 is priced at $1 by every source anyway, and
+the model floors them there regardless. So a single `count=300` grab is more
+than sufficient — there's nothing to gain from going deeper.
+
+**Why it can't be automatic — and why a login wouldn't help.** Yahoo renders
+that table with JavaScript after the page loads, so there's nothing in the HTML
+to fetch server-side, and the page sends no CORS header, so the browser can't
+read it cross-origin either. Neither of those is an authentication problem:
+signing in changes nothing about them. Their official API *does* expose
+`average_cost` via `draftanalysis`, but it needs OAuth2 with a registered
+application — that's a developer app registration, not a username and password.
+If it's ever worth setting up, the fetch belongs in `src/lib/sources/yahoo.js`
+behind env credentials, shaped like the other source modules, and it would run
+locally rather than from the deployed page.
 
 **The paste shape is handled.** Yahoo's table copies out vertically — one cell
 per line, with empty cells dropped entirely:

@@ -110,6 +110,17 @@ test("an injury flag between name and numbers doesn't shift the value", () => {
   assert.equal(chase.value, 65.5);
 });
 
+test("undrafted Yahoo rows are skipped, not read as rank-priced", () => {
+  // Real deep rows look like "294  -  -  1": rank, no % drafted, no Avg $, and
+  // a $1 projection. Importing 294 as a dollar value would be catastrophic.
+  const { rows } = parseImport(
+    YAHOO_PASTE + "\nJaylen Wright\nMia - RB\n294\n-\n-\n1\n"
+  );
+  assert.equal(rows.find((r) => r.name === "Jaylen Wright"), undefined);
+  assert.equal(rows.length, 3, "the three real rows still import");
+  assert.ok(rows.every((r) => r.value < 100), "no rank ever lands in the value column");
+});
+
 test("vertical rows land on the right players, suffixes and all", () => {
   const { rows } = parseImport(YAHOO_PASTE);
   const { players, matched, unmatched } = applyImport(pool, rows, "yahoo");

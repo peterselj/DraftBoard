@@ -26,6 +26,9 @@ export const DEFAULT_SETTINGS = {
   scoring: DEFAULT_SCORING,
   // Which site the auction runs on; its published values anchor the room.
   platform: "espn",
+  // Share of the biddable money that goes to starters rather than bench
+  // depth. 0.88 is the elboberto sheet's figure.
+  starterShare: 0.88,
 };
 
 export function defaultTeams(numTeams) {
@@ -120,6 +123,14 @@ export function computeBaselineFromSupply(settings, supply) {
     const demand = dedicatedDemand[pos] + flexShare;
     ratio[pos] = at(pos) > 0 ? demand / at(pos) : 99;
   });
+
+  // FLEX as a whole: every RB/WR/TE slot, dedicated and flex alike, against the
+  // combined skill-position pool. Informational — it says whether startable
+  // skill talent is drying up generally, which a single position's number
+  // can't. Never applied to an individual player's price.
+  const flexDemand = FLEX_ELIGIBLE.reduce((s, pos) => s + dedicatedDemand[pos], 0) + totalFlexDemand;
+  const flexSupply = FLEX_ELIGIBLE.reduce((s, pos) => s + at(pos), 0);
+  ratio.FLEX = flexSupply > 0 ? flexDemand / flexSupply : 99;
   return ratio;
 }
 
@@ -189,6 +200,14 @@ export function computeLive(
     const raw = base > 0 ? liveRatio / base : 1;
     scarcityMult[pos] = Math.min(3, Math.max(0.4, raw));
   });
+
+  // Combined skill-position reading (see computeBaselineFromSupply).
+  const flexSupplyValue = FLEX_ELIGIBLE.reduce((s, pos) => s + liveSupply[pos], 0);
+  const flexDemand = FLEX_ELIGIBLE.reduce((s, pos) => s + openDedByPos[pos], 0) + openFlexTotal;
+  const flexLiveRatio = flexSupplyValue > 0 ? flexDemand / flexSupplyValue : 99;
+  const flexBase = baselineRatio.FLEX || 1;
+  scarcityMult.FLEX = Math.min(3, Math.max(0.4, flexBase > 0 ? flexLiveRatio / flexBase : 1));
+  liveSupply.FLEX = flexSupplyValue;
 
   return {
     teamStats, budgetInflationMult, scarcityMult, competitiveDollars, undraftedValueSum,

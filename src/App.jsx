@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { RotateCcw, Settings2, X, Undo2, Keyboard } from "lucide-react";
 import {
   POSITIONS, FLEX_ELIGIBLE, DEFAULT_SETTINGS, defaultTeams,
-  computeBaselineFromSupply, positionSupply, computeLive, adjustedValue,
+  computeBaseline, computeLive, adjustedValue,
 } from "./lib/draftMath.js";
 import { computeModelValues } from "./lib/valueModel.js";
 import { DEFAULT_SCORING } from "./lib/scoring.js";
@@ -12,6 +12,10 @@ import {
 } from "./lib/dataSource.js";
 import { applyImport } from "./lib/importParse.js";
 import { loadDraft, saveDraft, clearDraft } from "./lib/storage.js";
+import {
+  roomKey, roomFromUrl, setUrlRoom, upsertRoom, adoptLegacyDraft,
+} from "./lib/rooms.js";
+import RoomPicker from "./components/RoomPicker.jsx";
 import { C, F, ui, money } from "./theme.js";
 import ConfirmDialog from "./components/ConfirmDialog.jsx";
 import QuickEntry from "./components/QuickEntry.jsx";
@@ -22,14 +26,6 @@ import DataPanel from "./components/DataPanel.jsx";
 import { PressureGauge, ScarcityChips, TeamStrip } from "./components/Dashboard.jsx";
 
 const freshPlayers = seedPlayers;
-
-/** The "at draft start" value-per-position snapshot that live scarcity is
- *  measured against. Model values depend on league settings, so this has to be
- *  taken with the settings in force when the draft begins. */
-function snapshotSupply(pool, settings) {
-  const { values } = computeModelValues(pool, settings);
-  return positionSupply(pool, (p) => values.get(p.id) ?? p.projected);
-}
 
 const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper"];
 
@@ -50,11 +46,17 @@ function siteValue(p, platform) {
 }
 
 export default function App() {
+  // A draft saved before rooms existed is adopted as a room rather than lost.
+  const [room, setRoom] = useState(() => roomFromUrl() || adoptLegacyDraft());
+  if (!room) return <RoomPicker onEnter={(code) => { setUrlRoom(code); setRoom(code); }} />;
+  return <Board key={room} room={room} onLeave={() => { setUrlRoom(""); setRoom(null); }} />;
+}
+
+function Board({ room, onLeave }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [teams, setTeams] = useState(() => defaultTeams(DEFAULT_SETTINGS.numTeams));
   const [players, setPlayers] = useState(freshPlayers);
   const [picks, setPicks] = useState([]);
-  const [baselinePool, setBaselinePool] = useState(() => snapshotSupply(freshPlayers(), DEFAULT_SETTINGS));
   const [loaded, setLoaded] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -78,14 +80,13 @@ export default function App() {
   // ---- persistence ---------------------------------------------------------
   useEffect(() => {
     let cancelled = false;
-    const saved = loadDraft();
+    const saved = loadDraft(roomKey(room));
     if (saved) {
       // Scoring settings arrived after the first saved drafts existed.
       if (saved.settings) setSettings({ scoring: DEFAULT_SCORING, ...saved.settings });
       if (saved.teams) setTeams(saved.teams);
       if (saved.players) setPlayers(saved.players);
       if (saved.picks) setPicks(saved.picks);
-      setBaselinePool(saved.baselinePool || snapshotSupply(saved.players || freshPlayers(), saved.settings || DEFAULT_SETTINGS));
       if (saved.dataMeta) setDataMeta(saved.dataMeta);
     }
     setLoaded(true);
@@ -106,7 +107,6 @@ export default function App() {
           setPlayers((prev) => mergeValuesIntoPool(prev, incoming));
         } else {
           setPlayers(incoming);
-          setBaselinePool(snapshotSupply(incoming, saved?.settings || DEFAULT_SETTINGS));
         }
         setDataMeta(meta);
       })
@@ -126,18 +126,15 @@ export default function App() {
   useEffect(() => {
     if (!loaded) return undefined;
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(
-      () => saveDraft({ settings, teams, players, picks, baselinePool, dataMeta }),
-      400
-    );
+    saveTimer.current = setTimeout(() => {
+      saveDraft(roomKey(room), { settings, teams, players, picks, dataMeta });
+      // Keep the room list's summary line honest.
+      upsertRoom(room, { picks: picks.length });
+    }, 400);
     return () => clearTimeout(saveTimer.current);
-  }, [settings, teams, players, picks, baselinePool, dataMeta, loaded]);
+  }, [settings, teams, players, picks, dataMeta, loaded]);
 
   // ---- derived draft state -------------------------------------------------
-  const baselineRatio = useMemo(
-    () => computeBaselineFromSupply(settings, baselinePool),
-    [settings, baselinePool]
-  );
   // Bottom-up dollar values from projections, for this league's exact settings.
   // Players without projections fall through to their sheet value.
   const modelValues = useMemo(
@@ -147,6 +144,15 @@ export default function App() {
   const baseValueOf = useCallback(
     (p) => modelValues.get(p.id) ?? p.model ?? p.projected,
     [modelValues]
+  );
+
+  // The scarcity baseline is derived from the *whole* pool — drafted players
+  // included — so it always describes the start of the draft in the same units
+  // the live figure uses. Snapshotting it instead went stale the moment league
+  // settings changed, because model dollars scale with the size of the pot.
+  const baselineRatio = useMemo(
+    () => computeBaseline(settings, players, baseValueOf),
+    [settings, players, baseValueOf]
   );
 
   const live = useMemo(
@@ -311,17 +317,18 @@ export default function App() {
       confirmLabel: "Start new draft",
       danger: true,
       onConfirm: () => {
-        const pool = freshPlayers();
-        setPlayers(pool);
+        setPlayers((prev) => prev.map((p) => ({
+          ...p, drafted: false, paid: null, draftedBy: null,
+          snapAdjValue: null, snapBudgetMult: null, snapScarcityMult: null,
+        })));
         setPicks([]);
-        setBaselinePool(snapshotSupply(pool, settings));
         setDraftInputs({});
         setSearch("");
         setSelectedPos(new Set());
         setFlexOn(false);
         setHideDrafted(false);
         setTeams((prev) => prev.map((t) => ({ ...t })));
-        clearDraft();
+        clearDraft(roomKey(room));
         setConfirm(null);
         flashToast("New draft started.");
       },
@@ -339,8 +346,6 @@ export default function App() {
       snapAdjValue: null, snapBudgetMult: null, snapScarcityMult: null,
     };
     setPlayers((prev) => [...prev, player]);
-    // Added players count toward positional supply from here on.
-    setBaselinePool((prev) => ({ ...prev, [player.pos]: (prev[player.pos] || 0) + 1 }));
     setNewPlayer({ name: "", pos: "RB", projected: 5 });
     setAddOpen(false);
     // Make sure the new row is actually reachable rather than filtered away.
@@ -491,7 +496,12 @@ export default function App() {
             DRAFT NIGHT — {settings.numTeams} TEAMS · ${settings.budget} ·{" "}
             {draftedCount} {draftedCount === 1 ? "PICK" : "PICKS"} IN
           </div>
-          <h1 style={styles.h1}>DRAFT BOARD</h1>
+          <h1 style={styles.h1}>
+            DRAFT BOARD
+            <button style={styles.roomChip} onClick={onLeave} title="Switch room">
+              {room}
+            </button>
+          </h1>
         </div>
         <div style={styles.headerBtns}>
           <button style={ui.btn} onClick={undoLastPick} disabled={!picks.length} title="Ctrl+Z">
@@ -526,6 +536,8 @@ export default function App() {
           applyTeamNames={applyTeamNames}
           setScoring={(scoring) => setSettings((s) => ({ ...s, scoring }))}
           setPlatform={(p) => setSettings((s) => ({ ...s, platform: p }))}
+          setStarterShare={(v) =>
+            setSettings((s) => ({ ...s, starterShare: Math.min(1, Math.max(0.5, v || 0.88)) }))}
         />
       )}
 
@@ -667,7 +679,15 @@ const styles = {
   app: { fontFamily: F.body, background: C.bg, color: C.text, minHeight: "100vh", padding: "18px 20px 28px" },
   headerTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, marginBottom: 14 },
   eyebrow: { fontFamily: F.mono, fontSize: 11, letterSpacing: "0.12em", color: C.gold, marginBottom: 4 },
-  h1: { fontFamily: F.head, fontWeight: 700, fontSize: 26, letterSpacing: "0.03em", margin: 0, color: C.text },
+  h1: {
+    fontFamily: F.head, fontWeight: 700, fontSize: 26, letterSpacing: "0.03em",
+    margin: 0, color: C.text, display: "flex", alignItems: "center", gap: 10,
+  },
+  roomChip: {
+    fontFamily: F.mono, fontSize: 11.5, fontWeight: 600, letterSpacing: "0.04em",
+    background: "rgba(216,166,61,0.12)", border: "1px solid", borderColor: C.gold,
+    color: C.gold, borderRadius: 20, padding: "3px 11px", cursor: "pointer",
+  },
   headerBtns: { display: "flex", gap: 8, alignItems: "center" },
   gaugeRow: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 },
   addRow: { ...ui.panel, display: "flex", gap: 8, alignItems: "center", padding: 10, marginBottom: 10 },

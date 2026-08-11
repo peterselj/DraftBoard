@@ -23,7 +23,7 @@ const PLATFORMS = [
 
 export default function SettingsPanel({
   settings, teams, updateRoster, updateNumTeams, renameTeam, setMyTeam, setBudget, applyTeamNames,
-  setScoring, setPlatform,
+  setScoring, setPlatform, setStarterShare,
 }) {
   const scoring = settings.scoring || DEFAULT_SCORING;
   const activePreset = Object.entries(SCORING_PRESETS).find(
@@ -103,6 +103,15 @@ export default function SettingsPanel({
           ))}
           {activePreset === "custom" && <option value="custom">custom</option>}
         </select>
+        <label style={styles.label}>
+          starter $ share
+          <input
+            type="number" min="0.5" max="1" step="0.01" style={styles.input}
+            value={settings.starterShare ?? 0.88}
+            onChange={(e) => setStarterShare(parseFloat(e.target.value))}
+            title="Share of the biddable money that goes to starters rather than bench depth. 0.88 is the elboberto sheet's figure."
+          />
+        </label>
         {SCORING_FIELDS.map((f) => (
           <label key={f.key} style={styles.label}>
             {f.label}

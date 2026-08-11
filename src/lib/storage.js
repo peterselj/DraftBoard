@@ -4,7 +4,8 @@
 // The draft is live when this runs, so every path here is defensive: a bad
 // read must never take the board down mid-auction.
 
-const KEY = "ff-draft-board";
+// Which storage key a draft lives under is decided by the caller: each room
+// gets its own (see lib/rooms.js), so two leagues can be prepped side by side.
 const LEGACY_KEYS = ["ff-draft-room-2026"]; // pre-rename; migrated on first load
 export const SCHEMA_VERSION = 3;
 
@@ -44,8 +45,8 @@ function migrate(state) {
   return out;
 }
 
-export function loadDraft() {
-  let raw = readKey(KEY);
+export function loadDraft(key) {
+  let raw = readKey(key);
   if (!raw) {
     for (const legacy of LEGACY_KEYS) {
       raw = readKey(legacy);
@@ -58,9 +59,9 @@ export function loadDraft() {
   return migrate(raw);
 }
 
-export function saveDraft(state) {
+export function saveDraft(key, state) {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify({ ...state, version: SCHEMA_VERSION }));
+    window.localStorage.setItem(key, JSON.stringify({ ...state, version: SCHEMA_VERSION }));
     return true;
   } catch (e) {
     console.warn("Failed to save draft:", e);
@@ -68,9 +69,9 @@ export function saveDraft(state) {
   }
 }
 
-export function clearDraft() {
+export function clearDraft(key) {
   try {
-    window.localStorage.removeItem(KEY);
+    window.localStorage.removeItem(key);
     LEGACY_KEYS.forEach((k) => window.localStorage.removeItem(k));
   } catch (e) {
     console.warn("Failed to clear saved draft:", e);

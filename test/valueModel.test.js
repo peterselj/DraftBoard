@@ -63,14 +63,27 @@ test("dollars spent match the room's competitive money", () => {
     `top-pool spend ${spentOnTop.toFixed(0)} should be within 2% of ${competitive}`);
 });
 
-test("a replacement-level player prices at the $1 floor", () => {
-  const { values, replacementPoints } = computeModelValues(pool(), settings);
-  const players = pool();
-  const rbs = players.filter((p) => p.pos === "RB")
+test("the last rostered player prices at the $1 floor", () => {
+  const { values, benchBaseline } = computeModelValues(pool(), settings);
+  const rbs = pool().filter((p) => p.pos === "RB")
     .map((p) => ({ id: p.id, pts: projectedPoints(p, DEFAULT_SCORING) }))
     .sort((a, b) => b.pts - a.pts);
-  const replacement = rbs.find((r) => r.pts <= replacementPoints.RB);
-  assert.equal(Math.round(values.get(replacement.id)), 1);
+  const lastRostered = rbs.find((r) => r.pts <= benchBaseline.RB);
+  assert.equal(Math.round(values.get(lastRostered.id)), 1);
+});
+
+test("a starter-baseline player is worth real money, not $1", () => {
+  // The two-tier model's reason for existing. A player right at the starter
+  // cutoff has zero starter-VORP but plenty of bench-VORP, so he prices in the
+  // high single digits — which is what rooms actually pay. A single-baseline
+  // VORP model calls him $1 and would have you passing on every mid-tier arm.
+  const { values, startBaseline } = computeModelValues(pool(), settings);
+  const rbs = pool().filter((p) => p.pos === "RB")
+    .map((p) => ({ id: p.id, pts: projectedPoints(p, DEFAULT_SCORING) }))
+    .sort((a, b) => b.pts - a.pts);
+  const marginalStarter = rbs.find((r) => r.pts <= startBaseline.RB);
+  const price = values.get(marginalStarter.id);
+  assert.ok(price > 3, `marginal starter should carry real value, got $${price.toFixed(2)}`);
 });
 
 test("the best player is worth a real share of the budget", () => {
@@ -94,10 +107,27 @@ test("flex slots go to whichever position is genuinely deeper", () => {
   assert.equal(starters.QB, settings.numTeams * settings.roster.QB, "QB must not absorb flex");
 });
 
-test("more teams bidding pushes the top values up", () => {
+test("deeper leagues push replacement level down", () => {
+  // Note what is deliberately *not* asserted: that top-end prices rise with
+  // league size. They come out roughly flat, because a bigger league brings
+  // both more money and more rostered players, and those largely cancel. The
+  // elboberto workbook behaves the same way, and real $200 auctions price the
+  // top pick similarly at 10 and 12 teams. Asserting "more teams = pricier
+  // studs" would be encoding folklore over the model's actual behaviour.
   const small = computeModelValues(pool(), { ...settings, numTeams: 8 });
   const big = computeModelValues(pool(), { ...settings, numTeams: 14 });
-  assert.ok(Math.max(...big.values.values()) > Math.max(...small.values.values()));
+  assert.ok(big.startBaseline.RB < small.startBaseline.RB,
+    "a 14-team league has to start worse running backs than an 8-team one");
+  assert.ok(big.benchBaseline.WR < small.benchBaseline.WR);
+});
+
+test("a bigger starter share moves money from the bench to the starters", () => {
+  const lean = computeModelValues(pool(), { ...settings, starterShare: 0.75 });
+  const rich = computeModelValues(pool(), { ...settings, starterShare: 0.95 });
+  assert.ok(rich.starterRate > lean.starterRate);
+  assert.ok(rich.benchRate < lean.benchRate);
+  assert.ok(Math.max(...rich.values.values()) > Math.max(...lean.values.values()),
+    "concentrating money on starters should raise the top of the board");
 });
 
 test("an empty or projection-free pool degrades quietly", () => {

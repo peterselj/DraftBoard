@@ -7,3 +7,6 @@ dist
 !.env.example
 .claude/settings.local.json
 .vite
+2025_FantasyFootball_1.05_elboberto.xlsm
+*.xlsm
+desktop.ini

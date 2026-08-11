@@ -8,9 +8,20 @@ import { C, F, ui, money, fmtMult } from "../theme.js";
 //   Scarcity chips — each position's supply/demand vs. where it started (local).
 // Conflating them gives bad in-draft advice: "we had to overpay" means
 // something different in each case.
+// The scale is logarithmic between 0.5x and 2x, which are reciprocals, so
+// 1.00x sits dead centre and a 25% premium is exactly as far right as a 25%
+// discount is left. A linear 0.6–1.6 scale put "neutral" at 40%, which read as
+// though the room were already running hot before anyone had bid.
+const GAUGE_MIN = 0.5;
+const GAUGE_MAX = 2;
+const gaugePercent = (mult) => {
+  const clamped = Math.min(GAUGE_MAX, Math.max(GAUGE_MIN, mult));
+  return (Math.log(clamped / GAUGE_MIN) / Math.log(GAUGE_MAX / GAUGE_MIN)) * 100;
+};
+
 export function PressureGauge({ live }) {
   const mult = live.budgetInflationMult;
-  const pct = Math.min(100, Math.max(0, ((mult - 0.6) / (1.6 - 0.6)) * 100));
+  const pct = gaugePercent(mult);
   const tone = mult >= 1.08 ? "hot" : mult <= 0.92 ? "cold" : "even";
   const fill = tone === "hot" ? C.red : tone === "cold" ? C.teal : C.gold;
   const label = tone === "hot" ? C.redLt : tone === "cold" ? C.tealLt : C.goldLt;
@@ -27,9 +38,9 @@ export function PressureGauge({ live }) {
         <div style={{ ...styles.gaugeNeedle, left: `${pct}%` }} />
       </div>
       <div style={styles.gaugeFoot}>
-        <span>0.6x</span>
+        <span>{GAUGE_MIN}x</span>
         <span style={{ fontFamily: F.mono, fontSize: 20, fontWeight: 700, color: label }}>{fmtMult(mult)}</span>
-        <span>1.6x</span>
+        <span>{GAUGE_MAX}x</span>
       </div>
       {/* Say the number out loud rather than making it a vibe. Above 1x means
           the room has money left over relative to the talent left, so prices
@@ -50,14 +61,19 @@ export function PressureGauge({ live }) {
 export function ScarcityChips({ live }) {
   return (
     <div style={styles.chips}>
-      {SCARCITY_POS.map((pos) => {
+      {[...SCARCITY_POS, "FLEX"].map((pos) => {
         const m = live.scarcityMult[pos] || 1;
         const tone = m >= 1.25 ? "hot" : m <= 0.8 ? "cold" : "even";
+        const isFlex = pos === "FLEX";
         return (
           <div
             key={pos}
+            title={isFlex
+              ? "RB + WR + TE combined: whether startable skill talent overall is drying up. Shown for context — a player's price uses his own position."
+              : `Open ${pos} slots against ${pos} value left on the board, versus draft start`}
             style={{
               ...styles.chip,
+              ...(isFlex ? styles.chipFlex : null),
               borderColor: tone === "hot" ? "#5b2c28" : tone === "cold" ? "#204d47" : "#3a4a3e",
               background: tone === "hot" ? "#221514" : tone === "cold" ? "#0f2320" : "#141d17",
             }}
@@ -120,13 +136,15 @@ const styles = {
     marginBottom: 8, textTransform: "uppercase",
   },
   gaugeTrack: { position: "relative", height: 10, borderRadius: 5, background: "#1c261f", overflow: "hidden" },
-  gaugeTickCenter: { position: "absolute", left: "40%", top: 0, bottom: 0, width: 1, background: "#3a4a3e", zIndex: 1 },
+  gaugeTickCenter: { position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "#3a4a3e", zIndex: 1 },
   gaugeFill: { height: "100%", borderRadius: 5, transition: "width .4s ease" },
   gaugeNeedle: { position: "absolute", top: -3, width: 2, height: 16, background: C.text, transform: "translateX(-1px)" },
   gaugeFoot: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, fontSize: 11, color: C.dimmer },
   gaugeMath: { fontSize: 10.5, color: C.dimmer, marginTop: 3, fontFamily: F.mono },
   chips: { display: "flex", gap: 8, flexWrap: "wrap" },
   chip: { border: "1px solid", borderRadius: 8, padding: "10px 14px", minWidth: 76, textAlign: "center" },
+  // Set apart because it's context, not a multiplier anyone's price uses.
+  chipFlex: { borderStyle: "dashed", opacity: 0.9 },
   chipPos: { fontFamily: F.head, fontSize: 11, letterSpacing: "0.08em", color: C.dim },
   chipHint: { fontSize: 9.5, color: C.dimmer, marginTop: 2 },
   chipValue: { fontSize: 9.5, color: C.dim, marginTop: 3, fontFamily: F.mono },
