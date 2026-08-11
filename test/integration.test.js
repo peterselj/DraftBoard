@@ -32,8 +32,10 @@ test("an untouched board reads as neutral, not inflated", { skip }, () => {
   const teams = defaultTeams(settings.numTeams);
   const live = computeLive(players, teams, settings, computeBaseline(settings, players, baseValueOf), baseValueOf);
 
-  assert.ok(Math.abs(live.budgetInflationMult - 1) < 0.05,
-    `inflation should start near 1.00x, got ${live.budgetInflationMult.toFixed(2)}x`);
+  // Exactly 1.00x, not merely close: anything else rounds a $50 player to $49
+  // and shows a "-1" drift before a single bid has been made.
+  assert.ok(Math.abs(live.budgetInflationMult - 1) < 1e-9,
+    `inflation must start at exactly 1.00x, got ${live.budgetInflationMult.toFixed(6)}x`);
   for (const pos of ["QB", "RB", "WR", "TE"]) {
     assert.ok(Math.abs(live.scarcityMult[pos] - 1) < 0.01,
       `${pos} scarcity should start at 1.00x, got ${live.scarcityMult[pos].toFixed(2)}x`);
@@ -60,6 +62,22 @@ test("paying over the odds early makes the rest of the room cheaper", { skip }, 
 
   assert.ok(after.budgetInflationMult < before.budgetInflationMult,
     "money left the room faster than value did, so remaining players must get cheaper");
+});
+
+test("an untouched board shows no drift between model and live value", { skip }, () => {
+  // The visible symptom of a non-neutral start: model $50, live $49, "-1".
+  const players = dataset.players.map((p) => ({ ...p, drafted: false, paid: null, draftedBy: null }));
+  const { values } = computeModelValues(players, settings);
+  const baseValueOf = (p) => values.get(p.id) ?? p.projected ?? 1;
+  const teams = defaultTeams(settings.numTeams);
+  const live = computeLive(players, teams, settings, computeBaseline(settings, players, baseValueOf), baseValueOf);
+
+  const drifted = players.filter((p) => {
+    const model = baseValueOf(p);
+    return Math.round(adjustedValue(p, live, model)) !== Math.round(model);
+  });
+  assert.equal(drifted.length, 0,
+    `${drifted.length} players drift before any pick, e.g. ${drifted.slice(0, 3).map((p) => p.name).join(", ")}`);
 });
 
 test("live value tracks the multipliers", { skip }, () => {

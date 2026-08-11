@@ -90,13 +90,16 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, onR
           ? `${v.edge > 0 ? "+" : v.edge < 0 ? "−" : ""}${Math.abs(Math.round(v.edge))}`
           : ""}
       </td>
+      {/* The delta keeps its width whether or not there's a number in it, so
+          the dollar figures stay in one straight column down the page. */}
       <td style={styles.tdNum}>
-        <span style={{ fontWeight: 700 }}>{money(v.live)}</span>
-        {Math.round(v.live - v.model) !== 0 && (
-          <span style={{ fontSize: 10, color: deltaColor(v.live - v.model), marginLeft: 5 }}>
-            {v.live > v.model ? "+" : "−"}{Math.abs(Math.round(v.live - v.model))}
+        <span style={styles.liveCell}>
+          <span style={{ fontWeight: 700 }}>{money(v.live)}</span>
+          <span style={{ ...styles.liveDelta, color: deltaColor(v.live - v.model) }}>
+            {Math.round(v.live - v.model) !== 0 &&
+              `${v.live > v.model ? "+" : "−"}${Math.abs(Math.round(v.live - v.model))}`}
           </span>
-        )}
+        </span>
       </td>
       <td style={styles.tdDraft}>
         {p.drafted ? (
@@ -196,6 +199,8 @@ const styles = {
   tdName: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" },
   tdNum: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, textAlign: "right", fontFamily: F.mono },
   tdDraft: { padding: "5px 12px", borderBottom: `1px solid #1c261f` },
+  liveCell: { display: "inline-flex", alignItems: "baseline", justifyContent: "flex-end" },
+  liveDelta: { fontSize: 10, width: 22, textAlign: "left", paddingLeft: 5, flex: "0 0 auto" },
   posPill: {
     fontFamily: F.mono, fontSize: 10.5, fontWeight: 700, color: C.dim,
     border: `1px solid ${C.line2}`, borderRadius: 4, padding: "1px 6px",

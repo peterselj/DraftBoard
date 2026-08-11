@@ -174,7 +174,26 @@ export function computeLive(
   const undraftedValueSum = players
     .filter((p) => !p.drafted)
     .reduce((s, p) => s + Math.max(0, (baseValueOf(p) ?? 1) - 1), 0);
-  const budgetInflationMult = undraftedValueSum > 0 ? competitiveDollars / undraftedValueSum : 1;
+
+  // Measured against where the draft started, not against a raw dollars-per-
+  // point ratio. The two sides count the $1 floor slightly differently — the
+  // money side reserves a dollar for every roster slot, while the value model
+  // only ends up pricing the slots it has real players for — so the raw ratio
+  // starts near 0.996 rather than 1.000. That 0.4% is invisible in the gauge
+  // but enough to round a $50 player down to $49 and show a spurious "-1"
+  // before anyone has bid. Normalising removes the offset by construction and
+  // makes the number mean what the label says: price level now vs. at the start.
+  const slotsPerTeam = Object.values(roster).reduce((s, n) => s + (n || 0), 0);
+  const moneyAtStart = Math.max(1, teams.length * budget - teams.length * slotsPerTeam);
+  const valueAtStart = players.reduce((s, p) => s + Math.max(0, (baseValueOf(p) ?? 1) - 1), 0);
+  const parRate = valueAtStart > 0 ? moneyAtStart / valueAtStart : 1;
+
+  const liveRate = undraftedValueSum > 0 ? competitiveDollars / undraftedValueSum : parRate;
+  const budgetInflationMult = parRate > 0 ? liveRate / parRate : 1;
+
+  // The value still on the board, expressed in room dollars rather than model
+  // points, so the gauge can show two comparable figures.
+  const valueLeftAtPar = undraftedValueSum * parRate;
 
   // Supply is measured in *value still on the board*, not bodies. A head count
   // can't tell the difference between losing the top 4 RBs and losing 4
@@ -211,6 +230,7 @@ export function computeLive(
 
   return {
     teamStats, budgetInflationMult, scarcityMult, competitiveDollars, undraftedValueSum,
+    valueLeftAtPar,
     // Dollars of value still on the board at each position — the supply figure
     // the scarcity multiplier is derived from, surfaced so it can be shown.
     valueLeftByPos: liveSupply,

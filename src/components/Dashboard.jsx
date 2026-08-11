@@ -52,7 +52,7 @@ export function PressureGauge({ live }) {
       </div>
       <div style={styles.gaugeMath}>
         {money(live.competitiveDollars)} of bidding money left chasing{" "}
-        {money(live.undraftedValueSum)} of value
+        {money(live.valueLeftAtPar ?? live.undraftedValueSum)} of value
       </div>
     </div>
   );
