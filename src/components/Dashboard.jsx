@@ -19,7 +19,7 @@ export function PressureGauge({ live }) {
     <div style={styles.gaugeCard}>
       <div style={styles.gaugeLabel}>
         ROOM PRESSURE{" "}
-        <span style={{ opacity: 0.6, fontWeight: 400 }}>— league-wide budget vs. value left</span>
+        <span style={{ opacity: 0.6, fontWeight: 400 }}>— what $1 of value costs right now</span>
       </div>
       <div style={styles.gaugeTrack}>
         <div style={styles.gaugeTickCenter} />
@@ -31,10 +31,17 @@ export function PressureGauge({ live }) {
         <span style={{ fontFamily: F.mono, fontSize: 20, fontWeight: 700, color: label }}>{fmtMult(mult)}</span>
         <span>1.6x</span>
       </div>
-      <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>
-        {tone === "hot" && "Room is spending hot — dollars are worth less than sheet value."}
-        {tone === "cold" && "Room is cold — dollars are worth more than sheet value. Good time to buy."}
-        {tone === "even" && "Room is roughly on pace with projections."}
+      {/* Say the number out loud rather than making it a vibe. Above 1x means
+          the room has money left over relative to the talent left, so prices
+          run above model value — which is what you do about it. */}
+      <div style={{ fontSize: 11.5, color: C.bone, marginTop: 4 }}>
+        {tone === "hot" && <>Expect to pay <b>{money(mult * 100)} per $100</b> of model value. Bargains are gone; budget up.</>}
+        {tone === "cold" && <>Players are going for <b>{money(mult * 100)} per $100</b> of model value. Money is scarce — good time to buy.</>}
+        {tone === "even" && <>Prices are tracking model value — about <b>{money(mult * 100)} per $100</b>.</>}
+      </div>
+      <div style={styles.gaugeMath}>
+        {money(live.competitiveDollars)} of bidding money left chasing{" "}
+        {money(live.undraftedValueSum)} of value
       </div>
     </div>
   );
@@ -66,6 +73,9 @@ export function ScarcityChips({ live }) {
             </div>
             <div style={styles.chipHint}>
               {tone === "hot" ? "drying up" : tone === "cold" ? "plenty left" : "on pace"}
+            </div>
+            <div style={styles.chipValue} title="Model value still on the board at this position">
+              {money(live.valueLeftByPos?.[pos] ?? 0)} left
             </div>
           </div>
         );
@@ -114,10 +124,12 @@ const styles = {
   gaugeFill: { height: "100%", borderRadius: 5, transition: "width .4s ease" },
   gaugeNeedle: { position: "absolute", top: -3, width: 2, height: 16, background: C.text, transform: "translateX(-1px)" },
   gaugeFoot: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, fontSize: 11, color: C.dimmer },
+  gaugeMath: { fontSize: 10.5, color: C.dimmer, marginTop: 3, fontFamily: F.mono },
   chips: { display: "flex", gap: 8, flexWrap: "wrap" },
   chip: { border: "1px solid", borderRadius: 8, padding: "10px 14px", minWidth: 76, textAlign: "center" },
   chipPos: { fontFamily: F.head, fontSize: 11, letterSpacing: "0.08em", color: C.dim },
   chipHint: { fontSize: 9.5, color: C.dimmer, marginTop: 2 },
+  chipValue: { fontSize: 9.5, color: C.dim, marginTop: 3, fontFamily: F.mono },
   strip: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6, marginBottom: 14 },
   teamCard: { ...ui.panel, flex: "0 0 auto", minWidth: 112, border: "1px solid", padding: "8px 10px" },
   teamName: { display: "flex", alignItems: "center", fontSize: 11.5, fontWeight: 600, color: C.bone, marginBottom: 4, whiteSpace: "nowrap" },

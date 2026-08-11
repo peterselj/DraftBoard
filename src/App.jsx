@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { RotateCcw, Settings2, X, Undo2, Keyboard } from "lucide-react";
 import {
   POSITIONS, FLEX_ELIGIBLE, DEFAULT_SETTINGS, defaultTeams,
-  computeBaselineFromCounts, positionCounts, computeLive, adjustedValue,
+  computeBaselineFromSupply, positionSupply, computeLive, adjustedValue,
 } from "./lib/draftMath.js";
 import { computeModelValues } from "./lib/valueModel.js";
 import { DEFAULT_SCORING } from "./lib/scoring.js";
@@ -23,14 +23,30 @@ import { PressureGauge, ScarcityChips, TeamStrip } from "./components/Dashboard.
 
 const freshPlayers = seedPlayers;
 
+/** The "at draft start" value-per-position snapshot that live scarcity is
+ *  measured against. Model values depend on league settings, so this has to be
+ *  taken with the settings in force when the draft begins. */
+function snapshotSupply(pool, settings) {
+  const { values } = computeModelValues(pool, settings);
+  return positionSupply(pool, (p) => values.get(p.id) ?? p.projected);
+}
+
 const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper"];
 
-/** What the room is likely to pay: the mean of whatever published auction
- *  values we have for this player. Null when we have none. */
+/** Consensus across every published source we have. Null when we have none. */
 function marketValue(p) {
   const vals = MARKET_KEYS.map((k) => p[k]).filter((v) => typeof v === "number" && v > 0);
   if (!vals.length) return null;
   return vals.reduce((s, v) => s + v, 0) / vals.length;
+}
+
+/** The number the rest of the room is actually looking at: whatever the
+ *  platform this league drafts on publishes. That's what anchors the bidding —
+ *  doubly so if anyone is on autodraft. Falls back to consensus when the
+ *  chosen platform has no values loaded. */
+function siteValue(p, platform) {
+  const v = p[platform];
+  return typeof v === "number" && v > 0 ? v : null;
 }
 
 export default function App() {
@@ -38,7 +54,7 @@ export default function App() {
   const [teams, setTeams] = useState(() => defaultTeams(DEFAULT_SETTINGS.numTeams));
   const [players, setPlayers] = useState(freshPlayers);
   const [picks, setPicks] = useState([]);
-  const [baselinePool, setBaselinePool] = useState(() => positionCounts(freshPlayers()));
+  const [baselinePool, setBaselinePool] = useState(() => snapshotSupply(freshPlayers(), DEFAULT_SETTINGS));
   const [loaded, setLoaded] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -69,7 +85,7 @@ export default function App() {
       if (saved.teams) setTeams(saved.teams);
       if (saved.players) setPlayers(saved.players);
       if (saved.picks) setPicks(saved.picks);
-      setBaselinePool(saved.baselinePool || positionCounts(saved.players || freshPlayers()));
+      setBaselinePool(saved.baselinePool || snapshotSupply(saved.players || freshPlayers(), saved.settings || DEFAULT_SETTINGS));
       if (saved.dataMeta) setDataMeta(saved.dataMeta);
     }
     setLoaded(true);
@@ -90,7 +106,7 @@ export default function App() {
           setPlayers((prev) => mergeValuesIntoPool(prev, incoming));
         } else {
           setPlayers(incoming);
-          setBaselinePool(positionCounts(incoming));
+          setBaselinePool(snapshotSupply(incoming, saved?.settings || DEFAULT_SETTINGS));
         }
         setDataMeta(meta);
       })
@@ -119,7 +135,7 @@ export default function App() {
 
   // ---- derived draft state -------------------------------------------------
   const baselineRatio = useMemo(
-    () => computeBaselineFromCounts(settings, baselinePool),
+    () => computeBaselineFromSupply(settings, baselinePool),
     [settings, baselinePool]
   );
   // Bottom-up dollar values from projections, for this league's exact settings.
@@ -140,18 +156,25 @@ export default function App() {
   const myTeam = teams.find((t) => t.isMe) || teams[0];
 
   /** The three numbers every row (and the quick-entry preview) needs. */
+  const platform = settings.platform || "espn";
   const valueOf = useCallback(
     (p) => {
       const model = baseValueOf(p);
-      const market = marketValue(p);
+      const consensus = marketValue(p);
+      // Edge is measured against the platform's number when we have it: that's
+      // the price the room is anchored to, and the gap is the actual bet.
+      const site = siteValue(p, platform);
+      const anchor = site ?? consensus;
       return {
         model,
-        market,
-        edge: market == null ? 0 : model - market,
+        site,
+        consensus,
+        market: anchor,
+        edge: anchor == null ? 0 : model - anchor,
         live: adjustedValue(p, live, model),
       };
     },
-    [live, baseValueOf]
+    [live, baseValueOf, platform]
   );
 
   const effectivePos = useMemo(() => {
@@ -291,7 +314,7 @@ export default function App() {
         const pool = freshPlayers();
         setPlayers(pool);
         setPicks([]);
-        setBaselinePool(positionCounts(pool));
+        setBaselinePool(snapshotSupply(pool, settings));
         setDraftInputs({});
         setSearch("");
         setSelectedPos(new Set());
@@ -502,6 +525,7 @@ export default function App() {
           setBudget={(v) => setSettings((s) => ({ ...s, budget: Math.max(1, parseInt(v, 10) || 1) }))}
           applyTeamNames={applyTeamNames}
           setScoring={(scoring) => setSettings((s) => ({ ...s, scoring }))}
+          setPlatform={(p) => setSettings((s) => ({ ...s, platform: p }))}
         />
       )}
 
@@ -588,6 +612,7 @@ export default function App() {
         onRemove={requestRemovePlayer}
         maxBidFor={maxBidFor}
         onClearFilters={clearFilters}
+        platform={platform}
       />
 
       <div style={styles.footNote}>

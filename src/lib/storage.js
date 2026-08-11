@@ -6,7 +6,7 @@
 
 const KEY = "ff-draft-board";
 const LEGACY_KEYS = ["ff-draft-room-2026"]; // pre-rename; migrated on first load
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 function readKey(key) {
   try {
@@ -31,6 +31,15 @@ function migrate(state) {
       .map((p) => ({ playerId: p.id, price: p.paid, teamId: p.draftedBy, at: null }));
   }
   if (out.baselineRatio === undefined) out.baselineRatio = null;
+
+  // v3 changed the scarcity baseline from head counts to dollars of value.
+  // A v2 snapshot is numerically meaningless against the new supply figure —
+  // comparing "133 running backs" to "$749 of running back" pins every
+  // multiplier to the clamp. Drop it; the app recomputes it from the pool,
+  // which still contains the drafted players and so still describes the
+  // start-of-draft supply.
+  if ((out.version ?? 1) < 3) out.baselinePool = null;
+
   out.version = SCHEMA_VERSION;
   return out;
 }

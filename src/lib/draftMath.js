@@ -24,6 +24,8 @@ export const DEFAULT_SETTINGS = {
   budget: 200,
   roster: { QB: 1, RB: 2, WR: 3, TE: 1, FLEX: 1, K: 1, DEF: 1, BENCH: 6 },
   scoring: DEFAULT_SCORING,
+  // Which site the auction runs on; its published values anchor the room.
+  platform: "espn",
 };
 
 export function defaultTeams(numTeams) {
@@ -78,27 +80,29 @@ export function teamSlotBreakdown(teamId, players, roster) {
   };
 }
 
-/** How many players each scarcity position has in a pool — the supply half of
- *  the baseline. Snapshotted when a draft starts so the baseline reflects the
- *  pool actually being drafted from (including hand-added players), not the
- *  shipped seed file. */
-export function positionCounts(players) {
-  const counts = {};
+/** How much *value* each scarcity position holds in a pool — the supply half
+ *  of the baseline, measured in dollars above the $1 floor rather than in
+ *  bodies. Snapshotted when a draft starts so the baseline reflects the pool
+ *  actually being drafted from (including hand-added players). */
+export function positionSupply(players, baseValueOf = (p) => p.model ?? p.projected) {
+  const supply = {};
   SCARCITY_POS.forEach((pos) => {
-    counts[pos] = players.filter((p) => p.pos === pos).length;
+    supply[pos] = players
+      .filter((p) => p.pos === pos)
+      .reduce((s, p) => s + Math.max(0, (baseValueOf(p) ?? 1) - 1), 0);
   });
-  return counts;
+  return supply;
 }
 
 /** Fixed "at draft start" demand/supply ratio per position — the norm live
  *  scarcity is measured against. */
-export function computeBaseline(settings, allPlayers) {
-  return computeBaselineFromCounts(settings, positionCounts(allPlayers));
+export function computeBaseline(settings, allPlayers, baseValueOf) {
+  return computeBaselineFromSupply(settings, positionSupply(allPlayers, baseValueOf));
 }
 
 /** Same, from a stored supply snapshot. Demand is recomputed from current
  *  settings so editing roster slots mid-draft doesn't leave a stale baseline. */
-export function computeBaselineFromCounts(settings, supply) {
+export function computeBaselineFromSupply(settings, supply) {
   const { numTeams, roster } = settings;
   const at = (pos) => (supply && supply[pos]) || 0;
   const dedicatedDemand = {};
@@ -161,9 +165,16 @@ export function computeLive(
     .reduce((s, p) => s + Math.max(0, (baseValueOf(p) ?? 1) - 1), 0);
   const budgetInflationMult = undraftedValueSum > 0 ? competitiveDollars / undraftedValueSum : 1;
 
+  // Supply is measured in *value still on the board*, not bodies. A head count
+  // can't tell the difference between losing the top 4 RBs and losing 4
+  // replacement-level ones — it barely moves either way, because the pool is
+  // ~130 deep. Counting dollars instead means taking a stud off the board
+  // moves scarcity in proportion to how good he actually was.
   const liveSupply = {};
   SCARCITY_POS.forEach((pos) => {
-    liveSupply[pos] = players.filter((p) => !p.drafted && p.pos === pos).length;
+    liveSupply[pos] = players
+      .filter((p) => !p.drafted && p.pos === pos)
+      .reduce((s, p) => s + Math.max(0, (baseValueOf(p) ?? 1) - 1), 0);
   });
   const flexSupplyTotal = FLEX_ELIGIBLE.reduce((s, pos) => s + liveSupply[pos], 0) || 1;
 
@@ -179,7 +190,12 @@ export function computeLive(
     scarcityMult[pos] = Math.min(3, Math.max(0.4, raw));
   });
 
-  return { teamStats, budgetInflationMult, scarcityMult, competitiveDollars, undraftedValueSum };
+  return {
+    teamStats, budgetInflationMult, scarcityMult, competitiveDollars, undraftedValueSum,
+    // Dollars of value still on the board at each position — the supply figure
+    // the scarcity multiplier is derived from, surfaced so it can be shown.
+    valueLeftByPos: liveSupply,
+  };
 }
 
 /** What a player is worth *right now*, given the state of the draft.

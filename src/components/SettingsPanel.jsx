@@ -11,9 +11,19 @@ const SCORING_FIELDS = [
   { key: "tePremium", label: "TE bonus / catch" },
 ];
 
+// Which site the auction is actually running on. Its published values are what
+// the rest of the room sees on screen, so that's the number worth bidding
+// against — regardless of how much homework anyone has done.
+const PLATFORMS = [
+  { key: "espn", label: "ESPN", note: "refreshes live" },
+  { key: "yahoo", label: "Yahoo", note: "needs a paste — see docs/DATA.md" },
+  { key: "sleeper", label: "Sleeper", note: "publishes no auction values; paste your own" },
+  { key: "nffc", label: "NFFC", note: "needs a paste" },
+];
+
 export default function SettingsPanel({
   settings, teams, updateRoster, updateNumTeams, renameTeam, setMyTeam, setBudget, applyTeamNames,
-  setScoring,
+  setScoring, setPlatform,
 }) {
   const scoring = settings.scoring || DEFAULT_SCORING;
   const activePreset = Object.entries(SCORING_PRESETS).find(
@@ -42,6 +52,20 @@ export default function SettingsPanel({
             onChange={(e) => setBudget(e.target.value)}
           />
         </label>
+        <div style={{ ...ui.heading, marginTop: 14 }}>Drafting on</div>
+        <div style={styles.help}>
+          Sets which site's values show as <b>Site $</b> — the number your room
+          is anchored to.
+        </div>
+        <select
+          style={{ ...ui.input, width: "100%" }}
+          value={settings.platform || "espn"}
+          onChange={(e) => setPlatform(e.target.value)}
+        >
+          {PLATFORMS.map((p) => (
+            <option key={p.key} value={p.key}>{p.label} — {p.note}</option>
+          ))}
+        </select>
       </div>
 
       <div style={styles.col}>

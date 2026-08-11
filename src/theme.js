@@ -26,15 +26,23 @@ export const F = {
   body: "'Inter', sans-serif",
 };
 
+// NOTE: every style below splits `border` into `border: "1px solid"` plus an
+// explicit `borderColor`, and never uses the colour-carrying shorthand.
+// React removes style *longhands* it no longer sees but leaves the shorthand
+// in place, so `{...base, borderColor: gold}` -> `{...base}` used to reset the
+// colour to `initial` (black) rather than back to the base colour. Keeping
+// borderColor present in the base object makes toggles restore correctly.
 export const ui = {
   panel: {
     background: C.panel,
-    border: `1px solid ${C.line}`,
+    border: "1px solid",
+    borderColor: C.line,
     borderRadius: 8,
   },
   input: {
     background: C.bg,
-    border: `1px solid ${C.line2}`,
+    border: "1px solid",
+    borderColor: C.line2,
     color: C.text,
     borderRadius: 4,
     padding: "5px 8px",
@@ -45,7 +53,8 @@ export const ui = {
     alignItems: "center",
     gap: 6,
     background: C.panel,
-    border: `1px solid ${C.line2}`,
+    border: "1px solid",
+    borderColor: C.line2,
     color: C.bone,
     fontSize: 12,
     fontWeight: 600,

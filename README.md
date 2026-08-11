@@ -23,12 +23,18 @@ The board answers both, live, and shows the gap between them and the market.
 | Column | What it is |
 | --- | --- |
 | **Model $** | Bottom-up value: projected stats → this league's scoring → points above replacement → dollars. |
-| **Market $** | What the room will likely bid — published auction values (ESPN today, more sources importable). |
-| **Edge** | `Model − Market`. Positive means the market is underpricing him. |
+| **Site $** | What the platform you're drafting on publishes — the number the rest of your room is anchored to. Set it in Settings → Drafting on. |
+| **Edge** | `Model − Site`. Positive means the room is underpricing him. |
 | **Live $** | Model value adjusted for how the draft is actually going. |
 
 Keeping model and market apart is the whole point. A single blended number
 hides the disagreement, and the disagreement is where the edge is.
+
+**Site $**, specifically, is the platform's own number rather than a consensus
+across sites. Everyone in a good league does their own homework, but if the
+screen in front of them says `James Cook $43`, that anchors the bidding — and
+it's decisive if even one team is on autodraft. Hover any cell to see every
+source we have, plus the consensus and ADP.
 
 ## The math
 
@@ -54,13 +60,27 @@ undraftedValue      = Σ (model value − 1) over undrafted players
 budgetInflationMult = competitiveDollars / undraftedValue
 ```
 
+Above 1x means the room has money left over relative to the talent left, so
+expect to pay *more* than model value from here. Below 1x means the money is
+drained and players are about to go cheap.
+
 **Positional scarcity** — local: has one position dried up?
 
 ```
-liveRatio[pos]     = (open slots at pos + pos's share of open FLEX) / undrafted players at pos
-baselineRatio[pos] = the same ratio at draft start
-scarcityMult[pos]  = liveRatio / baselineRatio, clamped to [0.4, 3]
+demand[pos]        = open slots at pos + pos's share of open FLEX slots
+supply[pos]        = Σ (model $ − 1) over undrafted players at that position
+scarcityMult[pos]  = (demand/supply now) / (demand/supply at draft start),
+                     clamped to [0.4, 3]
 ```
+
+Supply is counted in **dollars still on the board**, not in bodies. Taking the
+top four RBs off a 130-deep board moves value by −24% while head count moves
+−3%, so a head-count ratio would report RB as having gotten *easier*. Counting
+value reports 1.17x — the position tightened. Details in
+[docs/VALUE_MODEL.md](docs/VALUE_MODEL.md).
+
+What someone *paid* never affects scarcity — only what left the board. Price
+moves the money gauge instead.
 
 **Live value**
 
@@ -68,15 +88,9 @@ scarcityMult[pos]  = liveRatio / baselineRatio, clamped to [0.4, 3]
 liveValue = $1 + (model $ − 1) × budgetInflationMult × scarcityMult[pos]
 ```
 
-Inflation and scarcity are deliberately separate readings. "We had to overpay"
-means something different when the whole room is hot than when one position
-just emptied out.
-
-### Known limitation
-
-Scarcity is a raw head-count ratio, so it can't see tiers. Losing the top 3 RBs
-while 25 replacement-level RBs remain barely moves the number, even though the
-position feels much thinner. See `FEATURE_BACKLOG.md`.
+Inflation and scarcity are deliberately separate readings. A stud going for $1
+makes his position scarcer *and* leaves the room with surplus cash; those are
+two different facts and they should be readable separately.
 
 ## Using it during a draft
 

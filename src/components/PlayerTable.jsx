@@ -5,10 +5,13 @@ import { C, F, money } from "../theme.js";
 
 const deltaColor = (d) => (d > 1 ? C.tealLt : d < -1 ? C.redLt : C.dim);
 
+const PLATFORM_LABEL = { espn: "ESPN", yahoo: "Yahoo", sleeper: "Sleeper", nffc: "NFFC" };
+
 export default function PlayerTable({
   rows, teams, myTeamId, draftInputs, setDraftInput, onDraft, onUndraft, onRemove, maxBidFor,
-  onClearFilters,
+  onClearFilters, platform = "espn",
 }) {
+  const siteLabel = PLATFORM_LABEL[platform] || platform.toUpperCase();
   return (
     <div style={styles.wrap}>
       <table style={styles.table}>
@@ -17,8 +20,13 @@ export default function PlayerTable({
             <th style={styles.th}>Player</th>
             <th style={styles.th}>Pos</th>
             <th style={styles.thNum} title="Bottom-up value from projections for this league's settings">Model $</th>
-            <th style={styles.thNum} title="Published auction values — what the room is likely to bid">Market $</th>
-            <th style={styles.thNum} title="Model minus market: positive means the market is underpricing him">Edge</th>
+            <th
+              style={styles.thNum}
+              title={`What ${siteLabel} publishes — the number the rest of your room is anchored to. Hover a cell to see every source.`}
+            >
+              {siteLabel} $
+            </th>
+            <th style={styles.thNum} title={`Model minus ${siteLabel}: positive means the room is underpricing him`}>Edge</th>
             <th style={styles.thNum} title="Model value adjusted for live budget inflation and positional scarcity">Live $</th>
             <th style={styles.thDraft}>Draft</th>
           </tr>
@@ -68,8 +76,14 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, onR
       <td style={styles.tdName}>{p.name}</td>
       <td style={styles.td}><span style={styles.posPill}>{p.pos}</span></td>
       <td style={styles.tdNum}>{money(v.model)}</td>
-      <td style={styles.tdNum} title={marketBreakdown(p)}>
-        {v.market ? money(v.market) : <span style={{ color: C.dimmer }}>—</span>}
+      <td style={styles.tdNum} title={marketBreakdown(p, v)}>
+        {v.site != null && money(v.site)}
+        {/* No value from the league's own platform — show the consensus of the
+            other sources instead, marked so it isn't mistaken for the real one. */}
+        {v.site == null && v.consensus != null && (
+          <span style={{ color: C.dim, fontStyle: "italic" }}>~{money(v.consensus)}</span>
+        )}
+        {v.site == null && v.consensus == null && <span style={{ color: C.dimmer }}>—</span>}
       </td>
       <td style={{ ...styles.tdNum, color: deltaColor(v.edge) }}>
         {v.market
@@ -152,13 +166,18 @@ function VerdictTag({ paid, snap }) {
   );
 }
 
-function marketBreakdown(p) {
+function marketBreakdown(p, v) {
   const parts = [];
   if (p.yahoo != null) parts.push(`Yahoo $${p.yahoo}`);
   if (p.espn != null) parts.push(`ESPN $${p.espn}`);
   if (p.nffc != null) parts.push(`NFFC $${p.nffc}`);
   if (p.sleeper != null) parts.push(`Sleeper $${p.sleeper}`);
-  return parts.join("  ·  ") || "no published values";
+  if (parts.length === 0) return "no published values";
+  if (v?.consensus != null && parts.length > 1) {
+    parts.push(`consensus $${Math.round(v.consensus)}`);
+  }
+  if (p.adp) parts.push(`ADP ${Math.round(p.adp)}`);
+  return parts.join("  ·  ");
 }
 
 const headCell = {
