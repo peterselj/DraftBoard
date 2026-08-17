@@ -136,11 +136,13 @@ ignored on both sides, so Yahoo's "James Cook III" finds "James Cook".
 ## Getting FantasyPros' auction values — step by step
 
 FantasyPros' [auction values calculator](https://www.fantasypros.com/nfl/auction-values/calculator.php)
-is a separate, always-visible **FP $** column (between **Model $** and **Site
-$**) rather than a "Drafting on" platform choice — it's not a site anyone
-actually drafts on, it's a second opinion worth comparing against. It also
-folds into **Market $**/consensus and **Edge** like the other sources, since
-`applyImport` treats it the same as Yahoo or NFFC.
+is a separate, always-visible **FP $** column — the leftmost dollar column —
+rather than a "Drafting on" platform choice, since it's not a site anyone
+actually drafts on. It's the board's source of truth once it's pasted in for
+a player: **Model $** and **Site $** are each measured against it (**Model
+Edge**, **Site Edge**), and **Live $** is based on it too, falling back to
+Model $ for anyone who hasn't been pasted in yet. See CLAUDE.md's "Three-number
+model" section for the full picture.
 
 1. **Open the page** and set the scoring format to match the league (0.5 PPR,
    unless told otherwise — check with whoever set the league scoring, since

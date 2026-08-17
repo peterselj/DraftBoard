@@ -19,16 +19,17 @@ export default function PlayerTable({
           <tr>
             <th style={styles.th}>Player</th>
             <th style={styles.th}>Pos</th>
+            <th style={styles.thNum} title="FantasyPros auction calculator (0.5 PPR), pasted in manually — the board's source of truth once it's there. See docs/DATA.md">FP $</th>
             <th style={styles.thNum} title="Bottom-up value from projections for this league's settings">Model $</th>
-            <th style={styles.thNum} title="FantasyPros auction calculator (0.5 PPR) — pasted in manually, see docs/DATA.md">FP $</th>
+            <th style={styles.thNum} title="Model minus FP $: positive means the model rates him higher than FantasyPros does">Model Edge</th>
             <th
               style={styles.thNum}
               title={`What ${siteLabel} publishes — the number the rest of your room is anchored to. Hover a cell to see every source.`}
             >
               {siteLabel} $
             </th>
-            <th style={styles.thNum} title={`Model minus ${siteLabel}: positive means the room is underpricing him`}>Edge</th>
-            <th style={styles.thNum} title="Model value adjusted for live budget inflation and positional scarcity">Live $</th>
+            <th style={styles.thNum} title={`${siteLabel} minus FP $: positive means ${siteLabel}'s published number is running ahead of FantasyPros'`}>Site Edge</th>
+            <th style={styles.thNum} title="Value adjusted for live budget inflation and positional scarcity, based on FP $ where it's been pasted in and model $ otherwise">Live $</th>
             <th style={styles.thDraft}>Draft</th>
           </tr>
         </thead>
@@ -49,7 +50,7 @@ export default function PlayerTable({
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={8} style={styles.empty}>
+              <td colSpan={9} style={styles.empty}>
                 No players match these filters.
                 {onClearFilters && (
                   <button style={styles.clearFilters} onClick={onClearFilters}>
@@ -76,12 +77,11 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, onR
     <tr style={{ opacity: p.drafted ? 0.5 : 1, background: mine ? "rgba(216,166,61,0.07)" : "transparent" }}>
       <td style={styles.tdName}>{p.name}</td>
       <td style={styles.td}><span style={styles.posPill}>{p.pos}</span></td>
-      <td style={styles.tdNum}>{money(v.model)}</td>
       <td style={styles.tdNum}>
-        {p.fantasypros != null
-          ? money(p.fantasypros)
-          : <span style={{ color: C.dimmer }}>—</span>}
+        {v.fp != null ? money(v.fp) : <span style={{ color: C.dimmer }}>—</span>}
       </td>
+      <td style={styles.tdNum}>{money(v.model)}</td>
+      <td style={{ ...styles.tdNum, color: deltaColor(v.modelEdge) }}>{edgeText(v.modelEdge)}</td>
       <td style={styles.tdNum} title={marketBreakdown(p, v)}>
         {v.site != null && money(v.site)}
         {/* No value from the league's own platform — show the consensus of the
@@ -91,19 +91,15 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, onR
         )}
         {v.site == null && v.consensus == null && <span style={{ color: C.dimmer }}>—</span>}
       </td>
-      <td style={{ ...styles.tdNum, color: deltaColor(v.edge) }}>
-        {v.market
-          ? `${v.edge > 0 ? "+" : v.edge < 0 ? "−" : ""}${Math.abs(Math.round(v.edge))}`
-          : ""}
-      </td>
+      <td style={{ ...styles.tdNum, color: deltaColor(v.siteEdge) }}>{edgeText(v.siteEdge)}</td>
       {/* The delta keeps its width whether or not there's a number in it, so
           the dollar figures stay in one straight column down the page. */}
       <td style={styles.tdNum}>
         <span style={styles.liveCell}>
           <span style={{ fontWeight: 700 }}>{money(v.live)}</span>
-          <span style={{ ...styles.liveDelta, color: deltaColor(v.live - v.model) }}>
-            {Math.round(v.live - v.model) !== 0 &&
-              `${v.live > v.model ? "+" : "−"}${Math.abs(Math.round(v.live - v.model))}`}
+          <span style={{ ...styles.liveDelta, color: deltaColor(v.live - v.basis) }}>
+            {Math.round(v.live - v.basis) !== 0 &&
+              `${v.live > v.basis ? "+" : "−"}${Math.abs(Math.round(v.live - v.basis))}`}
           </span>
         </span>
       </td>
@@ -173,6 +169,13 @@ function VerdictTag({ paid, snap }) {
       {d > 0 ? "over by " : "value by "}{money(Math.abs(d))}
     </span>
   );
+}
+
+/** Signed edge display, blank rather than $0 when there's nothing to
+ *  compare against (no FP $ pasted in yet). */
+function edgeText(d) {
+  if (d == null) return "";
+  return `${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(Math.round(d))}`;
 }
 
 function marketBreakdown(p, v) {

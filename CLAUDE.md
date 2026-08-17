@@ -41,15 +41,23 @@ scripts/             — data refresh pipeline (sources/ + refresh.mjs)
   silently reinterpreting old units is worse than discarding them. The
   head-count → dollars change in the scarcity baseline is the cautionary tale.
 
-## Two-number model (important)
+## Three-number model (important)
 
 `model $` is derived bottom-up from projected fantasy points for *this* league's settings.
-`market $` is published AAV from ESPN/Yahoo/Sleeper — what the room will actually bid.
-The edge is `model − market`. Don't collapse these into one number; the whole point is
-bidding against the published values.
+`FP $` is FantasyPros' 0.5 PPR auction calculator, pasted in by hand — the board's source
+of truth once it's there for a player, real calibrated auction money rather than a guess.
+`site $` is published AAV from whichever platform the league drafts on (Settings → Drafting
+on) — what's actually on the room's screen.
 
-Live value applies the draft-state multipliers on top:
-`liveValue = 1 + (model$ − 1) × budgetInflation × scarcity[pos]`
+Model and site are each measured *against* FP $, not blended into one number:
+`modelEdge = model$ − FP$`, `siteEdge = site$ − FP$`. Don't collapse these into a single
+edge; they're different bets — one says the model disagrees with FP, the other says the
+platform's published number is stale relative to it.
+
+Live value applies the draft-state multipliers on top of FP $ (falling back to model $ for
+players nobody's pasted an FP figure in for — budget inflation and scarcity need a number
+for every undrafted player to stay calibrated to the whole pot):
+`liveValue = 1 + (basis − 1) × budgetInflation × scarcity[pos]`, `basis = FP$ ?? model$`
 
 ## Data
 
