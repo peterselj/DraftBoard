@@ -20,6 +20,7 @@ export default function PlayerTable({
             <th style={styles.th}>Player</th>
             <th style={styles.th}>Pos</th>
             <th style={styles.thNum} title="Bottom-up value from projections for this league's settings">Model $</th>
+            <th style={styles.thNum} title="FantasyPros auction calculator (0.5 PPR) — pasted in manually, see docs/DATA.md">FP $</th>
             <th
               style={styles.thNum}
               title={`What ${siteLabel} publishes — the number the rest of your room is anchored to. Hover a cell to see every source.`}
@@ -48,7 +49,7 @@ export default function PlayerTable({
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={7} style={styles.empty}>
+              <td colSpan={8} style={styles.empty}>
                 No players match these filters.
                 {onClearFilters && (
                   <button style={styles.clearFilters} onClick={onClearFilters}>
@@ -76,6 +77,11 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, onR
       <td style={styles.tdName}>{p.name}</td>
       <td style={styles.td}><span style={styles.posPill}>{p.pos}</span></td>
       <td style={styles.tdNum}>{money(v.model)}</td>
+      <td style={styles.tdNum}>
+        {p.fantasypros != null
+          ? money(p.fantasypros)
+          : <span style={{ color: C.dimmer }}>—</span>}
+      </td>
       <td style={styles.tdNum} title={marketBreakdown(p, v)}>
         {v.site != null && money(v.site)}
         {/* No value from the league's own platform — show the consensus of the
@@ -175,6 +181,7 @@ function marketBreakdown(p, v) {
   if (p.espn != null) parts.push(`ESPN $${p.espn}`);
   if (p.nffc != null) parts.push(`NFFC $${p.nffc}`);
   if (p.sleeper != null) parts.push(`Sleeper $${p.sleeper}`);
+  if (p.fantasypros != null) parts.push(`FantasyPros $${p.fantasypros}`);
   if (parts.length === 0) return "no published values";
   if (v?.consensus != null && parts.length > 1) {
     parts.push(`consensus $${Math.round(v.consensus)}`);

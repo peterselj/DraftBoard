@@ -27,7 +27,7 @@ import { PressureGauge, ScarcityChips, TeamStrip } from "./components/Dashboard.
 
 const freshPlayers = seedPlayers;
 
-const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper"];
+const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper", "fantasypros"];
 
 /** Consensus across every published source we have. Null when we have none. */
 function marketValue(p) {
