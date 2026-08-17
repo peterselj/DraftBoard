@@ -9,6 +9,7 @@ const MARKET_FIELDS = [
   { key: "yahoo", label: "Yahoo market" },
   { key: "nffc", label: "NFFC market" },
   { key: "sleeper", label: "Sleeper market" },
+  { key: "fantasypros", label: "FantasyPros market (0.5 PPR calculator)" },
 ];
 
 function ago(iso) {

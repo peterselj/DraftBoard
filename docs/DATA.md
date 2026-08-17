@@ -133,6 +133,26 @@ The importer detects this layout, reads the position out of the `Det - RB`
 line, and takes the first dollar figure after the percentage. Name suffixes are
 ignored on both sides, so Yahoo's "James Cook III" finds "James Cook".
 
+## Getting FantasyPros' auction values — step by step
+
+FantasyPros' [auction values calculator](https://www.fantasypros.com/nfl/auction-values/calculator.php)
+is a separate, always-visible **FP $** column (between **Model $** and **Site
+$**) rather than a "Drafting on" platform choice — it's not a site anyone
+actually drafts on, it's a second opinion worth comparing against. It also
+folds into **Market $**/consensus and **Edge** like the other sources, since
+`applyImport` treats it the same as Yahoo or NFFC.
+
+1. **Open the page** and set the scoring format to match the league (0.5 PPR,
+   unless told otherwise — check with whoever set the league scoring, since
+   the site defaults to standard).
+2. **Select the table and copy** — click above the "Player" header, drag to
+   the bottom, Ctrl+C.
+3. **Paste it in.** Click **Import**, paste into the box, set *import into* →
+   **fantasypros**, and click apply.
+
+Like Yahoo, this page renders with JavaScript and sends no CORS header, so
+there's nothing to fetch automatically — paste is the only route in.
+
 ## Telling the board which site you're on
 
 **Settings → Drafting on** picks which source fills the **Site $** column and
