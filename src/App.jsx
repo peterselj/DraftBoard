@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { RotateCcw, Settings2, X, Undo2, Keyboard } from "lucide-react";
 import {
   POSITIONS, FLEX_ELIGIBLE, DEFAULT_SETTINGS, defaultTeams,
-  computeBaseline, computeLive, adjustedValue,
+  computeBaseline, computeLive, adjustedValue, leagueFillCounts,
 } from "./lib/draftMath.js";
 import { computeModelValues } from "./lib/valueModel.js";
 import { DEFAULT_SCORING } from "./lib/scoring.js";
@@ -175,6 +175,16 @@ function Board({ room, onLeave }) {
     () => computeLive(players, teams, settings, baselineRatio, fpBasisOf),
     [players, teams, settings, baselineRatio, fpBasisOf]
   );
+
+  // Plain head counts alongside the scarcity multipliers — how many bodies
+  // are actually gone, since a "1.05x" tells you nothing about that on its
+  // own (see leagueFillCounts's own comment for why five picks at one
+  // position doesn't mean five teams filled their room there).
+  const fillCounts = useMemo(
+    () => leagueFillCounts(players, teams, settings.roster),
+    [players, teams, settings.roster]
+  );
+
   const myTeam = teams.find((t) => t.isMe) || teams[0];
 
   /** The numbers every row (and the quick-entry preview) needs. */
@@ -548,7 +558,7 @@ function Board({ room, onLeave }) {
 
       <div style={styles.gaugeRow}>
         <PressureGauge live={live} />
-        <ScarcityChips live={live} />
+        <ScarcityChips live={live} fillCounts={fillCounts} roster={settings.roster} numTeams={settings.numTeams} />
       </div>
 
       {showSettings && (

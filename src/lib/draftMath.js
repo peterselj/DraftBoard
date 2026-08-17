@@ -83,6 +83,31 @@ export function teamSlotBreakdown(teamId, players, roster) {
   };
 }
 
+/** How many players at each position have actually been drafted, league-wide
+ *  — plain head counts, unlike the scarcity multiplier these sit next to,
+ *  which measures *value* against demand and says nothing about how many
+ *  bodies have actually come off the board.
+ *
+ *  A team's picks at a position overflow past its dedicated slots into FLEX
+ *  and then BENCH (see teamSlotBreakdown), so "5 WR taken" on a 3 WR / 1 FLEX
+ *  roster doesn't mean five teams filled their WR rooms — it can mean one
+ *  team took five, filling their 3 dedicated slots, their FLEX, and a bench
+ *  spot besides. Summing every team's overflow tells the two apart. */
+export function leagueFillCounts(players, teams, roster) {
+  const taken = {};
+  SCARCITY_POS.forEach((pos) => {
+    taken[pos] = players.filter((p) => p.drafted && p.pos === pos).length;
+  });
+  let flexFilled = 0;
+  let benchFilled = 0;
+  teams.forEach((t) => {
+    const b = teamSlotBreakdown(t.id, players, roster);
+    flexFilled += b.flexFilled;
+    benchFilled += b.benchFilled;
+  });
+  return { taken, flexFilled, benchFilled };
+}
+
 /** How much *value* each scarcity position holds in a pool — the supply half
  *  of the baseline, measured in dollars above the $1 floor rather than in
  *  bodies. Snapshotted when a draft starts so the baseline reflects the pool

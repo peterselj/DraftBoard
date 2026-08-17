@@ -58,13 +58,18 @@ export function PressureGauge({ live }) {
   );
 }
 
-export function ScarcityChips({ live }) {
+export function ScarcityChips({ live, fillCounts, roster = {}, numTeams = 0 }) {
+  const taken = fillCounts?.taken || {};
+  const flexTotal = (roster.FLEX || 0) * numTeams;
+  const benchTotal = (roster.BENCH || 0) * numTeams;
+
   return (
     <div style={styles.chips}>
       {[...SCARCITY_POS, "FLEX"].map((pos) => {
         const m = live.scarcityMult[pos] || 1;
         const tone = m >= 1.25 ? "hot" : m <= 0.8 ? "cold" : "even";
         const isFlex = pos === "FLEX";
+        const posTotal = (roster[pos] || 0) * numTeams;
         return (
           <div
             key={pos}
@@ -90,12 +95,34 @@ export function ScarcityChips({ live }) {
             <div style={styles.chipHint}>
               {tone === "hot" ? "drying up" : tone === "cold" ? "plenty left" : "on pace"}
             </div>
+            {/* Plain head count, deliberately separate from the multiplier
+                above — "1.05x" says the position is thin relative to value,
+                this says how many bodies are actually gone. A team's picks
+                past its dedicated slots overflow into FLEX and BENCH (see
+                leagueFillCounts), which is why those two get their own line
+                here instead of a per-position "taken" count. */}
+            <div style={styles.chipCount} title={isFlex ? "Total FLEX slots filled league-wide, from any position's overflow" : `${pos} players actually drafted, league-wide`}>
+              {isFlex ? `${fillCounts?.flexFilled ?? 0}/${flexTotal} filled` : `${taken[pos] ?? 0}/${posTotal} taken`}
+            </div>
             <div style={styles.chipValue} title="Model value still on the board at this position">
               {money(live.valueLeftByPos?.[pos] ?? 0)} left
             </div>
           </div>
         );
       })}
+
+      {/* Bench has no scarcity multiplier of its own — it's not a starting
+          slot, so there's no "thin vs. draft start" question to ask — but
+          the fill count is still worth a glance: it's the overflow that
+          didn't fit in a dedicated or FLEX slot. */}
+      <div style={{ ...styles.chip, ...styles.chipFlex }} title="Total BENCH slots filled league-wide, from any position's overflow past its dedicated and FLEX slots">
+        <div style={styles.chipPos}>BENCH</div>
+        <div style={{ fontFamily: F.mono, fontSize: 18, fontWeight: 700, color: C.bone }}>
+          {fillCounts?.benchFilled ?? 0}
+        </div>
+        <div style={styles.chipHint}>filled</div>
+        <div style={styles.chipValue}>of {benchTotal} slots</div>
+      </div>
     </div>
   );
 }
@@ -147,6 +174,7 @@ const styles = {
   chipFlex: { borderStyle: "dashed", opacity: 0.9 },
   chipPos: { fontFamily: F.head, fontSize: 11, letterSpacing: "0.08em", color: C.dim },
   chipHint: { fontSize: 9.5, color: C.dimmer, marginTop: 2 },
+  chipCount: { fontSize: 9.5, color: C.dim, marginTop: 3, fontFamily: F.mono },
   chipValue: { fontSize: 9.5, color: C.dim, marginTop: 3, fontFamily: F.mono },
   strip: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6, marginBottom: 14 },
   teamCard: { ...ui.panel, flex: "0 0 auto", minWidth: 112, border: "1px solid", padding: "8px 10px" },
