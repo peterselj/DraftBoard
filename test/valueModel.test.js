@@ -6,7 +6,10 @@ import { DEFAULT_SETTINGS } from "../src/lib/draftMath.js";
 
 const settings = { ...DEFAULT_SETTINGS, scoring: DEFAULT_SCORING };
 
-/** A synthetic pool with a clean linear talent curve per position. */
+/** A synthetic pool with a clean linear talent curve per position. Includes a
+ *  realistic-sized DEF slice (32 team defenses, like the real dataset) so
+ *  settings.priceDefenses — on by default — has real players to price rather
+ *  than reserving a phantom bench/starter share for a position nobody's in. */
 function pool() {
   const spec = { QB: 40, RB: 90, WR: 110, TE: 40 };
   const players = [];
@@ -24,6 +27,13 @@ function pool() {
               rec_td: (pos === "RB" ? 3 : 10) * scale },
       });
     }
+  }
+  for (let i = 0; i < 32; i++) {
+    const scale = 1 - i / 32;
+    players.push({
+      id: `DEF${i}`, name: `DEF ${i}`, pos: "DEF",
+      stats: { pts_half_ppr: 60 + 80 * scale },
+    });
   }
   return players;
 }
@@ -89,7 +99,11 @@ test("a starter-baseline player is worth real money, not $1", () => {
 test("the best player is worth a real share of the budget", () => {
   const { values } = computeModelValues(pool(), settings);
   const top = Math.max(...values.values());
-  assert.ok(top > 40 && top < settings.budget,
+  // >30, not >40: priceDefenses is on by default, so a 5th position now
+  // competes for the same pot, trimming a few real dollars off the ceiling
+  // for any one player — expected once DEF stops being $1 filler, not a
+  // regression.
+  assert.ok(top > 30 && top < settings.budget,
     `top value ${top.toFixed(0)} should be a meaningful but not absurd share of $${settings.budget}`);
 });
 

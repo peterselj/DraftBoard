@@ -21,10 +21,21 @@
 import { FLEX_ELIGIBLE, SCARCITY_POS, POSITIONS } from "./draftMath.js";
 import { projectedPoints, DEFAULT_SCORING } from "./scoring.js";
 
-/** Positions whose dollars come out of the competitive pool. K and DEF are
- *  $1 filler — the sheet holds back exactly one dollar per K/DEF slot and
- *  spends the rest on real positions. */
-const PRICED_POS = SCARCITY_POS;
+/** Positions whose dollars come out of the competitive pool. K is always $1
+ *  filler — kickers are low-variance and nobody spends real auction money on
+ *  one. DEF joins the priced positions when `settings.priceDefenses` is on
+ *  (the app's default): defenses get real VORP-based dollars off their own
+ *  projected points, the same two-tier tranches as any other position,
+ *  rather than a flat $1.
+ *
+ *  Defaults to leaving DEF as filler when the setting is absent, which is
+ *  what the elboberto workbook itself does — that's what keeps
+ *  valueModel.elboberto.test.js's golden-file comparison honest. A caller
+ *  that doesn't know about this setting (an old saved draft, a fixture) gets
+ *  the historical behavior rather than a silent change underfoot. */
+function pricedPositions(settings) {
+  return settings.priceDefenses ? [...SCARCITY_POS, "DEF"] : SCARCITY_POS;
+}
 
 export function rosterSize(roster) {
   return Object.values(roster).reduce((s, n) => s + (n || 0), 0);
@@ -62,12 +73,12 @@ export function starterCounts(byPos, settings) {
 
 /** Bench slots split across the priced positions in proportion to how many
  *  starters each carries — the sheet's approach, fractional counts and all. */
-export function benchCounts(starters, settings) {
+export function benchCounts(starters, settings, pricedPos = SCARCITY_POS) {
   const { numTeams, roster } = settings;
   const totalBench = (roster.BENCH || 0) * numTeams;
-  const totalStarters = PRICED_POS.reduce((s, pos) => s + (starters[pos] || 0), 0) || 1;
+  const totalStarters = pricedPos.reduce((s, pos) => s + (starters[pos] || 0), 0) || 1;
   const bench = {};
-  PRICED_POS.forEach((pos) => {
+  pricedPos.forEach((pos) => {
     bench[pos] = totalBench * ((starters[pos] || 0) / totalStarters);
   });
   return bench;
@@ -98,6 +109,7 @@ export function computeModelValues(players, settings) {
   const scoring = settings.scoring || DEFAULT_SCORING;
   const { numTeams, budget, roster } = settings;
   const starterShare = settings.starterShare ?? 0.88;
+  const pricedPos = pricedPositions(settings);
 
   // 1. Score everyone we have a projection for.
   const scored = [];
@@ -121,10 +133,10 @@ export function computeModelValues(players, settings) {
 
   // 3. Two baselines per position: last starter, and last rostered player.
   const starters = starterCounts(byPos, settings);
-  const bench = benchCounts(starters, settings);
+  const bench = benchCounts(starters, settings, pricedPos);
   const startBaseline = {};
   const benchBaseline = {};
-  PRICED_POS.forEach((pos) => {
+  pricedPos.forEach((pos) => {
     const list = byPos[pos] || [];
     startBaseline[pos] = pointsAtRank(list, starters[pos] || 0);
     benchBaseline[pos] = pointsAtRank(list, (starters[pos] || 0) + (bench[pos] || 0));
@@ -134,21 +146,23 @@ export function computeModelValues(players, settings) {
   const startVorp = new Map();
   const benchVorp = new Map();
   for (const s of scored) {
-    if (!PRICED_POS.includes(s.pos)) continue;
+    if (!pricedPos.includes(s.pos)) continue;
     startVorp.set(s.id, Math.max(0, s.points - startBaseline[s.pos]));
     benchVorp.set(s.id, Math.max(0, s.points - benchBaseline[s.pos]));
   }
 
-  // 5. Money. Only K/DEF slots are held back at $1 apiece; everything else is
-  //    biddable, including bench dollars.
-  const fillerSlots = ((roster.K || 0) + (roster.DEF || 0)) * numTeams;
+  // 5. Money. K is always held back at $1/slot; DEF joins it only when it's
+  //    not in pricedPos (i.e. settings.priceDefenses is off). Everything else
+  //    is biddable, including bench dollars.
+  const fillerSlots =
+    ((roster.K || 0) + (pricedPos.includes("DEF") ? 0 : (roster.DEF || 0))) * numTeams;
   const totalMoney = Math.max(1, numTeams * budget - fillerSlots);
 
   // Bench rate first: it's set by the bench budget over the value that only
   // bench-quality players carry.
   const benchMoney = totalMoney * (1 - starterShare);
   let benchVorpSum = 0;
-  PRICED_POS.forEach((pos) => {
+  pricedPos.forEach((pos) => {
     const list = byPos[pos] || [];
     const from = Math.round(starters[pos] || 0);
     const to = Math.round((starters[pos] || 0) + (bench[pos] || 0));
@@ -162,7 +176,7 @@ export function computeModelValues(players, settings) {
   // deducted before working out what a starter-grade point costs.
   let starterVorpSum = 0;
   for (const v of startVorp.values()) starterVorpSum += v;
-  const gapSpend = PRICED_POS.reduce((sum, pos) => {
+  const gapSpend = pricedPos.reduce((sum, pos) => {
     const gap = Math.max(0, startBaseline[pos] - benchBaseline[pos]);
     return sum + gap * (starters[pos] || 0);
   }, 0);
@@ -172,8 +186,8 @@ export function computeModelValues(players, settings) {
   // 6. Dollars.
   const values = new Map();
   for (const s of scored) {
-    if (!PRICED_POS.includes(s.pos)) {
-      values.set(s.id, 1); // K/DEF: the dollar we held back
+    if (!pricedPos.includes(s.pos)) {
+      values.set(s.id, 1); // K, and DEF when priceDefenses is off: the dollar we held back
       continue;
     }
     const sv = startVorp.get(s.id) || 0;
@@ -185,5 +199,7 @@ export function computeModelValues(players, settings) {
   return { values, startBaseline, benchBaseline, starterRate, benchRate, starters, bench, pointsById };
 }
 
-/** Positions the model prices with real scarcity (K/DEF are $1 filler). */
-export const MODELED_POS = PRICED_POS;
+/** Positions the model always prices with real VORP, regardless of settings
+ *  — DEF joins this set too when settings.priceDefenses is on (see
+ *  pricedPositions above); K never does. */
+export const MODELED_POS = SCARCITY_POS;

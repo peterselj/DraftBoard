@@ -5,7 +5,6 @@ import {
   computeBaseline, computeLive, adjustedValue, leagueFillCounts,
 } from "./lib/draftMath.js";
 import { computeModelValues } from "./lib/valueModel.js";
-import { DEFAULT_SCORING } from "./lib/scoring.js";
 import {
   seedPlayers, toAppPlayer, loadPublishedDataset, refreshFromLiveSources,
   mergeValuesIntoPool, currentSeason,
@@ -82,8 +81,11 @@ function Board({ room, onLeave }) {
     let cancelled = false;
     const saved = loadDraft(roomKey(room));
     if (saved) {
-      // Scoring settings arrived after the first saved drafts existed.
-      if (saved.settings) setSettings({ scoring: DEFAULT_SCORING, ...saved.settings });
+      // Settings fields added after a room was first saved (scoring,
+      // priceDefenses, ...) come from the current defaults rather than
+      // showing up as undefined — a saved draft opts out of a new default by
+      // actually changing it, not by predating it.
+      if (saved.settings) setSettings({ ...DEFAULT_SETTINGS, ...saved.settings });
       if (saved.teams) setTeams(saved.teams);
       if (saved.players) setPlayers(saved.players);
       if (saved.picks) setPicks(saved.picks);

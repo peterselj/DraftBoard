@@ -46,14 +46,24 @@ mid-tier player in the draft.
 ### The money
 
 ```
-pool         = teams x budget - (K slots + DEF slots) x teams
+pool         = teams x budget - (filler slots) x teams
 benchMoney   = pool x (1 - starterShare)          starterShare defaults to 0.88
 starterMoney = pool x starterShare - (bench-rate spend on starters' first tranche)
 ```
 
-Only K and DEF hold back a dollar each; they're filler and get flat $1. Bench
-dollars are *biddable* and get spent on real players, which is why the pool is
-larger than a naive "reserve $1 per slot" figure.
+K always holds back a dollar per slot — kickers are low-variance and nobody
+spends real auction money on one. DEF used to be filler too, but
+`settings.priceDefenses` (on by default) prices it with the same two-tier
+VORP math as any other position instead: real dollars off its own projected
+points, competing for the pool like QB/RB/WR/TE do. That's the diverge point
+from the elboberto workbook itself, which holds DEF at flat $1 — see
+`valueModel.js`'s `pricedPositions()` for why the default differs depending
+on whether `priceDefenses` is present in the settings object at all (present
+and true for the live app, absent — and so `undefined`, which reads as off —
+for the elboberto fixture, which is why the golden-file test below still
+matches the sheet to the cent). Bench dollars are *biddable* either way and
+get spent on real players, which is why the pool is larger than a naive
+"reserve $1 per slot" figure.
 
 Starters pay the bench rate on their first tranche too, so that spend is
 deducted before working out what a starter-grade point costs. Without it the
@@ -98,7 +108,8 @@ than a flaky assertion.
 | --- | --- | --- |
 | Starter share | 0.88 of the pool, adjustable in Settings | Derive it from observed spending in past drafts |
 | Bench allocation | Proportional to starter counts | By merit, the way FLEX slots are allocated |
-| K / DEF | Flat $1, excluded from the pool | Price them, if your league genuinely bids on kickers |
+| DEF | Priced with real VORP (`priceDefenses: true`) | Flat $1 like the elboberto sheet — set `priceDefenses: false` |
+| K | Flat $1, excluded from the pool | Price it too, if your league genuinely bids on kickers |
 | Replacement level | Exactly the last starter / last rostered | Average a band around the cutoff (less jumpy) |
 
 The starter share is the one worth tuning: it decides how much of the budget
@@ -117,6 +128,11 @@ recomputed:
 ```
 liveValue = $1 + (model $ − 1) × budgetInflation × scarcity[pos]
 ```
+
+DEF gets real model dollars but no scarcity multiplier of its own — it's
+priced, not in `SCARCITY_POS`, so `adjustedValue` only ever applies budget
+inflation to a defense, not a position-specific scarcity reading. Adding one
+would mean deciding what "DEF is drying up" should even mean; not attempted.
 
 Budget inflation compares remaining money to remaining **model** value — the
 same currency. Comparing against market AAV instead would read as inflated from
