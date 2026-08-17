@@ -192,11 +192,14 @@ function Board({ room, onLeave }) {
         site,
         consensus,
         // How far our own number and the room's number each sit from FP $ —
-        // kept apart rather than blended, since they're different bets: one
-        // says the model disagrees with FP, the other says the site's
-        // published number is stale relative to it.
+        // kept apart rather than blended, since they're different bets. Model
+        // Edge just compares two value estimates (model − FP), no money
+        // involved. Site Edge is a price-vs-value bet, so it runs the other
+        // direction (FP − site): positive means the room's published price
+        // is *below* what FP thinks he's worth — a bargain, same "green is
+        // good" sense the old blended Edge always had.
         modelEdge: fp == null ? null : model - fp,
-        siteEdge: fp == null || site == null ? null : site - fp,
+        siteEdge: fp == null || site == null ? null : fp - site,
         // Best available stand-in for "true" market value, for the
         // quick-entry preview and anywhere else a single number is needed.
         market: fp ?? consensus,

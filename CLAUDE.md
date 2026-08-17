@@ -49,10 +49,13 @@ of truth once it's there for a player, real calibrated auction money rather than
 `site $` is published AAV from whichever platform the league drafts on (Settings → Drafting
 on) — what's actually on the room's screen.
 
-Model and site are each measured *against* FP $, not blended into one number:
-`modelEdge = model$ − FP$`, `siteEdge = site$ − FP$`. Don't collapse these into a single
-edge; they're different bets — one says the model disagrees with FP, the other says the
-platform's published number is stale relative to it.
+Model and site are each measured *against* FP $, not blended into one number, and the two
+edges run in opposite directions on purpose: `modelEdge = model$ − FP$` just compares two
+value estimates (no money changes hands, so there's no "good" direction). `siteEdge = FP$ −
+site$` is a price-vs-value bet — positive means the room's published price is *below* what
+FP thinks he's worth, a bargain — so it keeps the "green is good" sense the old blended Edge
+always had. Getting this backwards (`site$ − FP$`) is the bug to watch for: it colors a
+bargain red.
 
 Live value applies the draft-state multipliers on top of FP $ (falling back to model $ for
 players nobody's pasted an FP figure in for — budget inflation and scarcity need a number
