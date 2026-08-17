@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Zap, CornerDownLeft } from "lucide-react";
 import { parseQuickEntry } from "../lib/quickEntry.js";
 import { C, F, money } from "../theme.js";
@@ -11,6 +11,7 @@ import { C, F, money } from "../theme.js";
 export default function QuickEntry({ players, teams, myTeamId, valueOf, onCommit, inputRef }) {
   const [text, setText] = useState("");
   const [cursor, setCursor] = useState(0);
+  const prevQuery = useRef("");
 
   const parsed = useMemo(
     () => parseQuickEntry(text, { players, teams, myTeamId }),
@@ -20,6 +21,18 @@ export default function QuickEntry({ players, teams, myTeamId, valueOf, onCommit
   const candidates = parsed.playerMatches.slice(0, 6);
   const chosen = candidates[cursor] || parsed.player;
   const canCommit = Boolean(chosen && parsed.price >= 1 && parsed.team && !parsed.teamAmbiguous);
+
+  // Re-rank only actually moves the highlight when the *name* part of the
+  // line changes. Without this, arrowing down to the right "jeffer" match
+  // and then typing the price snapped the pick back to the top match on the
+  // very next keystroke — the highlight looked like a selection but wasn't
+  // wired to anything past that render.
+  useEffect(() => {
+    if (parsed.playerQuery !== prevQuery.current) {
+      prevQuery.current = parsed.playerQuery;
+      setCursor(0);
+    }
+  }, [parsed.playerQuery]);
 
   const commit = () => {
     if (!canCommit) return;
@@ -35,9 +48,21 @@ export default function QuickEntry({ players, teams, myTeamId, valueOf, onCommit
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setCursor((c) => Math.max(c - 1, 0));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      commit();
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      // Before a price is typed there's nothing to commit yet, so Enter/Tab
+      // instead locks in whichever player is highlighted — swapping the
+      // typed fragment for their full name — and leaves the field open for
+      // the price and team. That's the step that was missing: hitting Enter
+      // on "jeffer" just sat there with no visible effect.
+      if (!parsed.hasPrice && chosen) {
+        e.preventDefault();
+        setText(`${chosen.name} `);
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        commit();
+      }
     } else if (e.key === "Escape") {
       e.preventDefault();
       setText("");
@@ -55,7 +80,7 @@ export default function QuickEntry({ players, teams, myTeamId, valueOf, onCommit
           style={styles.input}
           value={text}
           placeholder="jeffer 54 bou   —  player, price, team, Enter"
-          onChange={(e) => { setText(e.target.value); setCursor(0); }}
+          onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
           aria-label="Quick pick entry"
           spellCheck={false}
