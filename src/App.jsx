@@ -146,41 +146,65 @@ function Board({ room, onLeave }) {
     [modelValues]
   );
 
+  // FantasyPros' 0.5 PPR calculator (pasted in via Import → fantasypros) is
+  // the board's source of truth once it's there for a player: real, already-
+  // calibrated auction money, rather than either our own bottom-up guess or
+  // one platform's AAV. Everything else is measured *against* it — Model $
+  // and Site $ each get their own edge relative to FP $ — instead of folding
+  // into one blended "market" figure.
+  //
+  // Budget inflation and scarcity (computeBaseline/computeLive) need a value
+  // for every undrafted player to stay calibrated to the whole pot, and FP $
+  // is only ever pasted in for the top of the pool — so this falls back to
+  // the model value for anyone it's missing for, rather than leaving gaps.
+  const fpBasisOf = useCallback(
+    (p) => (typeof p.fantasypros === "number" && p.fantasypros > 0 ? p.fantasypros : baseValueOf(p)),
+    [baseValueOf]
+  );
+
   // The scarcity baseline is derived from the *whole* pool — drafted players
   // included — so it always describes the start of the draft in the same units
   // the live figure uses. Snapshotting it instead went stale the moment league
   // settings changed, because model dollars scale with the size of the pot.
   const baselineRatio = useMemo(
-    () => computeBaseline(settings, players, baseValueOf),
-    [settings, players, baseValueOf]
+    () => computeBaseline(settings, players, fpBasisOf),
+    [settings, players, fpBasisOf]
   );
 
   const live = useMemo(
-    () => computeLive(players, teams, settings, baselineRatio, baseValueOf),
-    [players, teams, settings, baselineRatio, baseValueOf]
+    () => computeLive(players, teams, settings, baselineRatio, fpBasisOf),
+    [players, teams, settings, baselineRatio, fpBasisOf]
   );
   const myTeam = teams.find((t) => t.isMe) || teams[0];
 
-  /** The three numbers every row (and the quick-entry preview) needs. */
+  /** The numbers every row (and the quick-entry preview) needs. */
   const platform = settings.platform || "espn";
   const valueOf = useCallback(
     (p) => {
       const model = baseValueOf(p);
+      const fp = typeof p.fantasypros === "number" && p.fantasypros > 0 ? p.fantasypros : null;
       const consensus = marketValue(p);
-      // Edge is measured against the platform's number when we have it: that's
-      // the price the room is anchored to, and the gap is the actual bet.
       const site = siteValue(p, platform);
-      const anchor = site ?? consensus;
+      const basis = fpBasisOf(p);
       return {
         model,
+        fp,
         site,
         consensus,
-        market: anchor,
-        edge: anchor == null ? 0 : model - anchor,
-        live: adjustedValue(p, live, model),
+        // How far our own number and the room's number each sit from FP $ —
+        // kept apart rather than blended, since they're different bets: one
+        // says the model disagrees with FP, the other says the site's
+        // published number is stale relative to it.
+        modelEdge: fp == null ? null : model - fp,
+        siteEdge: fp == null || site == null ? null : site - fp,
+        // Best available stand-in for "true" market value, for the
+        // quick-entry preview and anywhere else a single number is needed.
+        market: fp ?? consensus,
+        basis,
+        live: adjustedValue(p, live, basis),
       };
     },
-    [live, baseValueOf, platform]
+    [live, baseValueOf, fpBasisOf, platform]
   );
 
   const effectivePos = useMemo(() => {
