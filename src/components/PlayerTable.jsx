@@ -28,7 +28,7 @@ export default function PlayerTable({
             >
               {siteLabel} $
             </th>
-            <th style={styles.thNum} title={`${siteLabel} minus FP $: positive means ${siteLabel}'s published number is running ahead of FantasyPros'`}>Site Edge</th>
+            <th style={styles.thNum} title={`FP $ minus ${siteLabel}: positive means ${siteLabel} is pricing him below what FantasyPros thinks he's worth — a bargain`}>Site Edge</th>
             <th style={styles.thNum} title="Value adjusted for live budget inflation and positional scarcity, based on FP $ where it's been pasted in and model $ otherwise">Live $</th>
             <th style={styles.thDraft}>Draft</th>
           </tr>
