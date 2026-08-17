@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Draft Board</title>
+    <style>
+      /* Every number input on the board is a dollar figure or a small count
+         typed fast during a live draft — the native up/down spinner just
+         gets in the way (and eats click targets next to it), so it's off
+         everywhere rather than case-by-case per input. */
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
