@@ -153,6 +153,14 @@ folds into **Market $**/consensus and **Edge** like the other sources, since
 Like Yahoo, this page renders with JavaScript and sends no CORS header, so
 there's nothing to fetch automatically — paste is the only route in.
 
+**The paste shape is handled.** The calculator copies out as several tables
+stitched together, one per position, each with its own repeated header row
+(`# QB Value`, then `# RB Value`, ...), and the team rides right in the name
+cell — `Josh Allen, BUF`, sometimes with an injury badge stuck on with no
+space (`Patrick Mahomes II, KCDTD`). The importer drops the repeated headers,
+tags each row with the position from whichever header preceded it, and strips
+everything from the first comma onward before matching names.
+
 ## Telling the board which site you're on
 
 **Settings → Drafting on** picks which source fills the **Site $** column and
