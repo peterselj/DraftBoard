@@ -16,8 +16,10 @@ numbers with no server, no API key, and no rebuild.
 
 We take Sleeper's **raw stats**, not its pre-scored totals, so *this* league's
 scoring decides the points. Kickers and defenses are the exception — the feeds
-don't expose enough of their components to re-score honestly, so their
-pre-scored total is used. They're $1 filler anyway.
+don't expose enough of their components to re-score honestly (field goals by
+distance, points-allowed bands), so their pre-scored total is used as-is.
+Kickers are $1 filler regardless; defenses still get real model dollars off
+that pre-scored total — see `docs/VALUE_MODEL.md`.
 
 ESPN returns only 50 players without the `X-Fantasy-Filter` header; with it,
 500. That header makes the browser preflight the request, which ESPN currently

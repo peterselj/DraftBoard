@@ -29,6 +29,11 @@ export const DEFAULT_SETTINGS = {
   // Share of the biddable money that goes to starters rather than bench
   // depth. 0.88 is the elboberto sheet's figure.
   starterShare: 0.88,
+  // Off in the elboberto sheet itself (DEF is $1 filler there), on here:
+  // defenses get real VORP-based dollars like any other position. See
+  // valueModel.js's pricedPositions() for why this defaults differently
+  // depending on whether settings came from here or straight from a fixture.
+  priceDefenses: true,
 };
 
 export function defaultTeams(numTeams) {
