@@ -14,8 +14,8 @@ export default function QuickEntry({ players, teams, myTeamId, valueOf, onCommit
   const prevQuery = useRef("");
 
   const parsed = useMemo(
-    () => parseQuickEntry(text, { players, teams, myTeamId }),
-    [text, players, teams, myTeamId]
+    () => parseQuickEntry(text, { players, teams, myTeamId, valueOf }),
+    [text, players, teams, myTeamId, valueOf]
   );
 
   const candidates = parsed.playerMatches.slice(0, 6);

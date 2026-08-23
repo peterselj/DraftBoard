@@ -1,5 +1,5 @@
 import React from "react";
-import { Trash2, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import TeamPicker from "./TeamPicker.jsx";
 import { C, F, money } from "../theme.js";
 
@@ -8,7 +8,7 @@ const deltaColor = (d) => (d > 1 ? C.tealLt : d < -1 ? C.redLt : C.dim);
 const PLATFORM_LABEL = { espn: "ESPN", yahoo: "Yahoo", sleeper: "Sleeper", nffc: "NFFC" };
 
 export default function PlayerTable({
-  rows, teams, myTeamId, draftInputs, setDraftInput, onDraft, onUndraft, onRemove, maxBidFor,
+  rows, teams, myTeamId, draftInputs, setDraftInput, onDraft, onUndraft, maxBidFor,
   onClearFilters, platform = "espn",
 }) {
   const siteLabel = PLATFORM_LABEL[platform] || platform.toUpperCase();
@@ -44,7 +44,6 @@ export default function PlayerTable({
               setDraftInput={setDraftInput}
               onDraft={onDraft}
               onUndraft={onUndraft}
-              onRemove={onRemove}
               maxBidFor={maxBidFor}
             />
           ))}
@@ -66,7 +65,7 @@ export default function PlayerTable({
   );
 }
 
-function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, onRemove, maxBidFor }) {
+function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, maxBidFor }) {
   const v = p._val;
   const state = input || { price: "", teamId: "" };
   const priceNum = parseInt(state.price, 10);
@@ -150,9 +149,6 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, onR
             >
               draft
             </button>
-            <button style={styles.iconBtn} onClick={() => onRemove(p.id)} title="Remove from the pool">
-              <Trash2 size={12} />
-            </button>
           </div>
         )}
       </td>
@@ -200,8 +196,19 @@ const headCell = {
 };
 
 const styles = {
-  wrap: { overflowX: "auto", border: `1px solid ${C.line}`, borderRadius: 8 },
-  table: { width: "100%", borderCollapse: "collapse", minWidth: 780 },
+  // No overflow here — it scrolls in App's scrollArea instead. `overflow-x:
+  // auto` on this div alone used to work fine visually, but it also makes
+  // the div a scroll container in the CSS sense (auto leaks onto the y-axis
+  // too), which becomes the *sticky* header's positioning ancestor instead
+  // of scrollArea — and since this div's own height always matches its
+  // content, the header never had anything to stick against and just
+  // scrolled away with everything else.
+  wrap: { border: `1px solid ${C.line}`, borderRadius: 8 },
+  // separate + zero spacing, not collapse: Chrome silently refuses to apply
+  // `position: sticky` to a <th> when its table uses border-collapse, so the
+  // sticky header just scrolled away with the body. Every cell already
+  // draws its own borderBottom, so this renders the same either way.
+  table: { width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: 780 },
   th: { ...headCell, textAlign: "left" },
   thNum: { ...headCell, textAlign: "right" },
   thDraft: { ...headCell, textAlign: "right", minWidth: 250 },

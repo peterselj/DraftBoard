@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { RotateCcw, Settings2, X, Undo2, Keyboard } from "lucide-react";
+import { RotateCcw, Settings2, X, Undo2, Keyboard, RefreshCw, Download } from "lucide-react";
 import {
   POSITIONS, FLEX_ELIGIBLE, DEFAULT_SETTINGS, defaultTeams,
   computeBaseline, computeLive, adjustedValue, leagueFillCounts,
@@ -22,12 +22,16 @@ import QuickEntry from "./components/QuickEntry.jsx";
 import FilterBar from "./components/FilterBar.jsx";
 import PlayerTable from "./components/PlayerTable.jsx";
 import SettingsPanel from "./components/SettingsPanel.jsx";
-import DataPanel from "./components/DataPanel.jsx";
+import DataPanel, { ago } from "./components/DataPanel.jsx";
 import { PressureGauge, ScarcityChips, TeamStrip } from "./components/Dashboard.jsx";
 
 const freshPlayers = seedPlayers;
 
 const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper", "fantasypros"];
+
+// Single-letter position filters, same toggle behavior as clicking the pill.
+// "D" is DEF rather than DST to match POSITIONS in draftMath.js.
+const POS_KEYS = { q: "QB", r: "RB", w: "WR", t: "TE", k: "K", d: "DEF" };
 
 /** Consensus across every published source we have. Null when we have none. */
 function marketValue(p) {
@@ -65,6 +69,7 @@ function Board({ room, onLeave }) {
   const [hideDrafted, setHideDrafted] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [newPlayer, setNewPlayer] = useState({ name: "", pos: "RB", projected: 5 });
   const [draftInputs, setDraftInputs] = useState({});
   const [confirm, setConfirm] = useState(null);
@@ -329,24 +334,6 @@ function Board({ room, onLeave }) {
     flashToast(`Undid ${name} (${money(last.price)}).`);
   }, [picks, players, undraftPlayer, flashToast]);
 
-  const requestRemovePlayer = useCallback(
-    (playerId) => {
-      const p = players.find((x) => x.id === playerId);
-      if (!p) return;
-      setConfirm({
-        title: `Remove ${p.name}?`,
-        body: "Takes him out of the pool entirely — he'll stop counting toward positional supply. Undo isn't available for this.",
-        confirmLabel: "Remove",
-        danger: true,
-        onConfirm: () => {
-          setPlayers((prev) => prev.filter((x) => x.id !== playerId));
-          setConfirm(null);
-        },
-      });
-    },
-    [players]
-  );
-
   const requestNewDraft = useCallback(() => {
     setConfirm({
       title: "Start a new draft?",
@@ -508,18 +495,24 @@ function Board({ room, onLeave }) {
         return;
       }
       if (typing) return;
+      const key = e.key.toLowerCase();
       if (e.key === "/") {
         e.preventDefault();
         quickRef.current?.focus();
-      } else if (e.key.toLowerCase() === "h") {
+      } else if (key === "h") {
         setHideDrafted((v) => !v);
-      } else if (e.key.toLowerCase() === "f") {
+      } else if (key === "f") {
         setFlexOn((v) => !v);
+      } else if (key === "a") {
+        setSelectedPos(new Set());
+        setFlexOn(false);
+      } else if (POS_KEYS[key]) {
+        togglePos(POS_KEYS[key]);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [undoLastPick]);
+  }, [undoLastPick, togglePos]);
 
   if (!loaded) return <div style={styles.app}>loading…</div>;
 
@@ -527,20 +520,32 @@ function Board({ room, onLeave }) {
     <div style={styles.app}>
       <GlobalStyle />
 
+      <div style={styles.topFixed}>
       <div style={styles.headerTop}>
-        <div>
-          <div style={styles.eyebrow}>
-            DRAFT NIGHT — {settings.numTeams} TEAMS · ${settings.budget} ·{" "}
-            {draftedCount} {draftedCount === 1 ? "PICK" : "PICKS"} IN
-          </div>
-          <h1 style={styles.h1}>
-            DRAFT BOARD
-            <button style={styles.roomChip} onClick={onLeave} title="Switch room">
-              {room}
-            </button>
-          </h1>
-        </div>
+        <h1 style={styles.h1}>
+          DRAFT BOARD
+          <button style={styles.roomChip} onClick={onLeave} title="Switch room">
+            {room}
+          </button>
+        </h1>
         <div style={styles.headerBtns}>
+          <span style={styles.dataStatus}>
+            <b style={{ color: C.bone }}>{dataMeta?.season ?? "—"} values</b>
+            {dataMeta?.origin ? ` · ${dataMeta.origin}` : ""}
+            {dataMeta?.generated ? ` · updated ${ago(dataMeta.generated)}` : ""}
+            {dataMeta?.count ? ` · ${dataMeta.count} players` : ""}
+          </span>
+          <button style={ui.btn} onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw size={14} style={refreshing ? { animation: "spin 1s linear infinite" } : undefined} />
+            {refreshing ? "refreshing…" : "Refresh values"}
+          </button>
+          <button
+            style={{ ...ui.btn, ...(importOpen ? { borderColor: C.gold, color: C.gold } : {}) }}
+            onClick={() => setImportOpen((o) => !o)}
+          >
+            <Download size={14} /> Import
+          </button>
+          <span style={styles.headerDivider} />
           <button style={ui.btn} onClick={undoLastPick} disabled={!picks.length} title="Ctrl+Z">
             <Undo2 size={16} /> Undo{picks.length ? ` (${picks.length})` : ""}
           </button>
@@ -588,8 +593,7 @@ function Board({ room, onLeave }) {
 
       <DataPanel
         meta={dataMeta}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+        importOpen={importOpen}
         onImport={handleImport}
       />
 
@@ -655,26 +659,29 @@ function Board({ room, onLeave }) {
           <button style={styles.addCancel} onClick={() => setAddOpen(false)}><X size={14} /></button>
         </div>
       )}
+      </div>
 
-      <PlayerTable
-        rows={visibleRows}
-        teams={teams}
-        myTeamId={myTeam?.id}
-        draftInputs={draftInputs}
-        setDraftInput={setDraftInput}
-        onDraft={draftFromRow}
-        onUndraft={undraftPlayer}
-        onRemove={requestRemovePlayer}
-        maxBidFor={maxBidFor}
-        onClearFilters={clearFilters}
-        platform={platform}
-      />
+      <div style={styles.scrollArea}>
+        <PlayerTable
+          rows={visibleRows}
+          teams={teams}
+          myTeamId={myTeam?.id}
+          draftInputs={draftInputs}
+          setDraftInput={setDraftInput}
+          onDraft={draftFromRow}
+          onUndraft={undraftPlayer}
+          maxBidFor={maxBidFor}
+          onClearFilters={clearFilters}
+          platform={platform}
+        />
+      </div>
 
       <div style={styles.footNote}>
         <Keyboard size={13} style={{ verticalAlign: "-2px", marginRight: 6, color: C.dim }} />
         <b style={{ color: C.bone }}>/</b> jump to quick entry · <b style={{ color: C.bone }}>↑↓</b> pick a
         candidate · <b style={{ color: C.bone }}>Enter</b> log it · <b style={{ color: C.bone }}>Ctrl+Z</b> undo ·{" "}
-        <b style={{ color: C.bone }}>h</b> hide drafted · <b style={{ color: C.bone }}>f</b> flex
+        <b style={{ color: C.bone }}>h</b> hide drafted · <b style={{ color: C.bone }}>q r w t k d</b> filter
+        position · <b style={{ color: C.bone }}>f</b> flex · <b style={{ color: C.bone }}>a</b> all
         <div style={{ marginTop: 6 }}>
           Live $ = model value adjusted for room pressure and positional scarcity. Scarcity is a
           raw head-count ratio and doesn't yet account for tiers — see FEATURE_BACKLOG.md.
@@ -719,9 +726,17 @@ function GlobalStyle() {
 }
 
 const styles = {
-  app: { fontFamily: F.body, background: C.bg, color: C.text, minHeight: "100vh", padding: "18px 20px 28px" },
-  headerTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, marginBottom: 14 },
-  eyebrow: { fontFamily: F.mono, fontSize: 11, letterSpacing: "0.12em", color: C.gold, marginBottom: 4 },
+  // Fixed-height column: everything above the player list (topFixed) and the
+  // shortcut footer stay put, only scrollArea scrolls. `minHeight: 0` on
+  // scrollArea is required — a flex child otherwise refuses to shrink below
+  // its content size, and the whole page scrolls instead of just the table.
+  app: {
+    fontFamily: F.body, background: C.bg, color: C.text, height: "100vh",
+    padding: "18px 20px 12px", display: "flex", flexDirection: "column", overflow: "hidden",
+  },
+  topFixed: { flex: "0 0 auto" },
+  scrollArea: { flex: "1 1 auto", minHeight: 0, overflowY: "auto", overflowX: "auto", marginBottom: 8 },
+  headerTop: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 },
   h1: {
     fontFamily: F.head, fontWeight: 700, fontSize: 26, letterSpacing: "0.03em",
     margin: 0, color: C.text, display: "flex", alignItems: "center", gap: 10,
@@ -731,12 +746,14 @@ const styles = {
     background: "rgba(216,166,61,0.12)", border: "1px solid", borderColor: C.gold,
     color: C.gold, borderRadius: 20, padding: "3px 11px", cursor: "pointer",
   },
-  headerBtns: { display: "flex", gap: 8, alignItems: "center" },
-  gaugeRow: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 },
+  headerBtns: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" },
+  dataStatus: { fontSize: 11, color: C.dimmer, marginRight: 4 },
+  headerDivider: { width: 1, alignSelf: "stretch", background: C.line, margin: "0 2px" },
+  gaugeRow: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 },
   addRow: { ...ui.panel, display: "flex", gap: 8, alignItems: "center", padding: 10, marginBottom: 10 },
   addConfirm: { background: C.gold, color: C.bg, border: "none", borderRadius: 5, padding: "7px 14px", fontWeight: 700, fontSize: 12, cursor: "pointer" },
   addCancel: { background: "none", border: "none", color: C.dim, cursor: "pointer", padding: 6 },
-  footNote: { fontSize: 11, color: C.dimmer, marginTop: 14, lineHeight: 1.6, maxWidth: 860 },
+  footNote: { flex: "0 0 auto", fontSize: 11, color: C.dimmer, marginTop: 8, lineHeight: 1.5, maxWidth: 860 },
   toast: {
     position: "fixed", bottom: 22, left: "50%", transform: "translateX(-50%)",
     background: C.panelHi, border: `1px solid ${C.gold}`, color: C.text,
