@@ -563,7 +563,13 @@ function Board({ room, onLeave }) {
 
       <div style={styles.gaugeRow}>
         <PressureGauge live={live} />
-        <ScarcityChips live={live} fillCounts={fillCounts} roster={settings.roster} numTeams={settings.numTeams} />
+        <ScarcityChips
+          live={live}
+          myTeamId={myTeam?.id}
+          fillCounts={fillCounts}
+          roster={settings.roster}
+          numTeams={settings.numTeams}
+        />
       </div>
 
       {showSettings && (
