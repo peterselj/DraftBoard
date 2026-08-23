@@ -13,7 +13,7 @@ const ME = new Set(["me", "my", "mine", "us"]);
 /** Parse a quick-entry line against the current board.
  *  Pure: returns everything the UI needs to render a preview and decide
  *  whether Enter should commit. */
-export function parseQuickEntry(text, { players = [], teams = [], myTeamId = null } = {}) {
+export function parseQuickEntry(text, { players = [], teams = [], myTeamId = null, valueOf = null } = {}) {
   const tokens = String(text || "").trim().split(/\s+/).filter(Boolean);
   const priceIdx = tokens.findIndex((t) => PRICE.test(t));
 
@@ -23,7 +23,10 @@ export function parseQuickEntry(text, { players = [], teams = [], myTeamId = nul
   const teamQuery = hasPrice ? tokens.slice(priceIdx + 1).join(" ") : "";
 
   const undrafted = players.filter((p) => !p.drafted);
-  const playerMatches = rankMatches(playerQuery, undrafted, (p) => p.name).map((m) => m.item);
+  // Equally good name matches are broken by live value: "mcca" should lead
+  // with Christian McCaffrey, not J.J. McCarthy.
+  const playerValue = valueOf ? (p) => valueOf(p).live : null;
+  const playerMatches = rankMatches(playerQuery, undrafted, (p) => p.name, playerValue).map((m) => m.item);
 
   let team = null;
   let teamAmbiguous = false;

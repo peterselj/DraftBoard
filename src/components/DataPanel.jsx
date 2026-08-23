@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { RefreshCw, Download, AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check } from "lucide-react";
 import { parseImport } from "../lib/importParse.js";
 import { C, F, ui } from "../theme.js";
 
@@ -12,7 +12,7 @@ const MARKET_FIELDS = [
   { key: "fantasypros", label: "FantasyPros market (0.5 PPR calculator)" },
 ];
 
-function ago(iso) {
+export function ago(iso) {
   if (!iso) return "unknown";
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
   if (Number.isNaN(mins)) return "unknown";
@@ -23,8 +23,10 @@ function ago(iso) {
   return `${Math.round(hrs / 24)}d ago`;
 }
 
-export default function DataPanel({ meta, refreshing, onRefresh, onImport }) {
-  const [importOpen, setImportOpen] = useState(false);
+// Status text + the Refresh/Import trigger buttons live in the header now
+// (App.jsx) so this panel is just the notes strip and the expandable import
+// box — importOpen is controlled from up there too.
+export default function DataPanel({ meta, importOpen, onImport }) {
   const [text, setText] = useState("");
   const [field, setField] = useState("projected");
   const [result, setResult] = useState(null);
@@ -39,26 +41,6 @@ export default function DataPanel({ meta, refreshing, onRefresh, onImport }) {
 
   return (
     <div style={styles.wrap}>
-      <div style={styles.statusRow}>
-        <span style={styles.status}>
-          <b style={{ color: C.bone }}>{meta?.season ?? "—"} values</b>
-          {meta?.origin ? ` · ${meta.origin}` : ""}
-          {meta?.generated ? ` · updated ${ago(meta.generated)}` : ""}
-          {meta?.count ? ` · ${meta.count} players` : ""}
-        </span>
-
-        <button style={ui.btn} onClick={onRefresh} disabled={refreshing}>
-          <RefreshCw size={14} style={refreshing ? { animation: "spin 1s linear infinite" } : undefined} />
-          {refreshing ? "refreshing…" : "Refresh values"}
-        </button>
-        <button
-          style={{ ...ui.btn, ...(importOpen ? { borderColor: C.gold, color: C.gold } : {}) }}
-          onClick={() => setImportOpen((o) => !o)}
-        >
-          <Download size={14} /> Import
-        </button>
-      </div>
-
       {meta?.notes?.length > 0 && (
         <div style={styles.warn}>
           <AlertTriangle size={13} /> {meta.notes.join(" · ")}
@@ -142,8 +124,6 @@ export default function DataPanel({ meta, refreshing, onRefresh, onImport }) {
 
 const styles = {
   wrap: { marginBottom: 12 },
-  statusRow: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
-  status: { fontSize: 11.5, color: C.dimmer, marginRight: "auto" },
   warn: {
     display: "flex", alignItems: "center", gap: 6, marginTop: 8,
     fontSize: 11.5, color: C.goldLt,

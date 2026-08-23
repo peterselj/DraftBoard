@@ -157,19 +157,35 @@ export function TeamStrip({ teams, live }) {
 }
 
 const styles = {
-  gaugeCard: { ...ui.panel, flex: "1 1 340px", padding: "14px 16px" },
+  // Grows alongside the chips rather than sitting at a fixed width — a
+  // narrow card wrapped "right now" and "$100" onto their own lines. Kept
+  // narrow enough (min 190) that all 6 chips still fit beside it at
+  // split-screen widths (~half a laptop screen, down to ~700px) without
+  // BENCH wrapping.
+  gaugeCard: { ...ui.panel, flex: "3 1 190px", minWidth: 190, maxWidth: 440, padding: "9px 11px" },
   gaugeLabel: {
     fontFamily: F.head, fontSize: 12, letterSpacing: "0.05em", color: C.bone,
-    marginBottom: 8, textTransform: "uppercase",
+    marginBottom: 6, textTransform: "uppercase",
   },
   gaugeTrack: { position: "relative", height: 10, borderRadius: 5, background: "#1c261f", overflow: "hidden" },
   gaugeTickCenter: { position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "#3a4a3e", zIndex: 1 },
   gaugeFill: { height: "100%", borderRadius: 5, transition: "width .4s ease" },
   gaugeNeedle: { position: "absolute", top: -3, width: 2, height: 16, background: C.text, transform: "translateX(-1px)" },
-  gaugeFoot: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, fontSize: 11, color: C.dimmer },
+  gaugeFoot: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, fontSize: 11, color: C.dimmer },
   gaugeMath: { fontSize: 10.5, color: C.dimmer, marginTop: 3, fontFamily: F.mono },
-  chips: { display: "flex", gap: 8, flexWrap: "wrap" },
-  chip: { border: "1px solid", borderRadius: 8, padding: "10px 14px", minWidth: 76, textAlign: "center" },
+  chips: { display: "flex", gap: 5, flexWrap: "wrap", flex: "5 1 413px" },
+  // flex-grow so each card stretches to use the row's actual width instead
+  // of leaving it empty past BENCH — that's also what was squeezing "on
+  // pace" and the dollar figures into a narrower column than they needed.
+  // maxWidth keeps a lone card that wraps onto its own line (usually BENCH)
+  // from stretching edge-to-edge — without it, growing to fill an otherwise
+  // empty row made it comically wide. minWidth is trimmed down (with tighter
+  // padding) specifically so all 6 still fit on one line at split-screen
+  // widths instead of BENCH dropping to a second row.
+  chip: {
+    flex: "1 1 68px", border: "1px solid", borderRadius: 8, padding: "6px 6px",
+    minWidth: 68, maxWidth: 140, textAlign: "center",
+  },
   // Set apart because it's context, not a multiplier anyone's price uses.
   chipFlex: { borderStyle: "dashed", opacity: 0.9 },
   chipPos: { fontFamily: F.head, fontSize: 11, letterSpacing: "0.08em", color: C.dim },
