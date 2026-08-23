@@ -511,7 +511,7 @@ export default function App() {
 
       <div style={styles.gaugeRow}>
         <PressureGauge live={live} />
-        <ScarcityChips live={live} />
+        <ScarcityChips live={live} myTeamId={myTeam?.id} />
       </div>
 
       {showSettings && (

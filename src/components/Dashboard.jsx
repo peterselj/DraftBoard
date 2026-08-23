@@ -1,6 +1,6 @@
 import React from "react";
 import { Star } from "lucide-react";
-import { SCARCITY_POS } from "../lib/draftMath.js";
+import { SCARCITY_POS, FLEX_ELIGIBLE } from "../lib/draftMath.js";
 import { C, F, ui, money, fmtMult } from "../theme.js";
 
 // Two readings, deliberately kept apart:
@@ -47,12 +47,36 @@ export function PressureGauge({ live }) {
   );
 }
 
-export function ScarcityChips({ live }) {
+// Quadrant verdict: scarcity tone (room-wide, from the multiplier) crossed
+// with need (yours alone, from your open roster slots). The multiplier only
+// tells you the position's temperature; it can't say what to do about it
+// without knowing whether you're still shopping there. Four situations,
+// stated as an action rather than left for you to re-derive at the table:
+//   need + hot   -> the price only gets worse, don't wait
+//   need + cold  -> no urgency, the position is currently a buyer's market
+//   full + hot   -> your nomination taxes rivals who are stuck needing it
+//   full + cold  -> nobody's threatened, nominating here wastes a turn
+const VERDICTS = {
+  "hot-need": { label: "Strike now", detail: "price only climbs from here" },
+  "hot-full": { label: "Nominate to bleed rivals", detail: "teams that need it are stuck paying up" },
+  "cold-need": { label: "No rush", detail: "buyer's market — wait for your price" },
+  "cold-full": { label: "Skip nominating", detail: "nobody's threatened, it won't bleed anyone" },
+  "even-need": { label: "Tracking fair", detail: "buy at model price when the player's right" },
+  "even-full": { label: "Neutral", detail: "no scarcity edge to exploit here" },
+};
+
+export function ScarcityChips({ live, myTeamId }) {
+  const myBreakdown = myTeamId ? live.teamStats[myTeamId]?.breakdown : null;
   return (
     <div style={styles.chips}>
       {SCARCITY_POS.map((pos) => {
         const m = live.scarcityMult[pos] || 1;
         const tone = m >= 1.25 ? "hot" : m <= 0.8 ? "cold" : "even";
+        const needIt = myBreakdown
+          ? (myBreakdown.openDedicated[pos] || 0) > 0 ||
+            (FLEX_ELIGIBLE.includes(pos) && myBreakdown.openFlex > 0)
+          : true; // no team selected: default to showing the buy-side read
+        const verdict = VERDICTS[`${tone}-${needIt ? "need" : "full"}`];
         return (
           <div
             key={pos}
@@ -62,7 +86,12 @@ export function ScarcityChips({ live }) {
               background: tone === "hot" ? "#221514" : tone === "cold" ? "#0f2320" : "#141d17",
             }}
           >
-            <div style={styles.chipPos}>{pos}</div>
+            <div style={styles.chipTop}>
+              <div style={styles.chipPos}>{pos}</div>
+              <div style={styles.chipNeed} title={needIt ? "You have an open slot here" : "Your roster is full here"}>
+                {needIt ? "NEED" : "FULL"}
+              </div>
+            </div>
             <div
               style={{
                 fontFamily: F.mono, fontSize: 18, fontWeight: 700,
@@ -71,9 +100,8 @@ export function ScarcityChips({ live }) {
             >
               {fmtMult(m)}
             </div>
-            <div style={styles.chipHint}>
-              {tone === "hot" ? "drying up" : tone === "cold" ? "plenty left" : "on pace"}
-            </div>
+            <div style={styles.chipVerdict}>{verdict.label}</div>
+            <div style={styles.chipHint}>{verdict.detail}</div>
             <div style={styles.chipValue} title="Model value still on the board at this position">
               {money(live.valueLeftByPos?.[pos] ?? 0)} left
             </div>
@@ -126,8 +154,11 @@ const styles = {
   gaugeFoot: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, fontSize: 11, color: C.dimmer },
   gaugeMath: { fontSize: 10.5, color: C.dimmer, marginTop: 3, fontFamily: F.mono },
   chips: { display: "flex", gap: 8, flexWrap: "wrap" },
-  chip: { border: "1px solid", borderRadius: 8, padding: "10px 14px", minWidth: 76, textAlign: "center" },
+  chip: { border: "1px solid", borderRadius: 8, padding: "10px 14px", minWidth: 118, textAlign: "center" },
+  chipTop: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 },
   chipPos: { fontFamily: F.head, fontSize: 11, letterSpacing: "0.08em", color: C.dim },
+  chipNeed: { fontFamily: F.head, fontSize: 9, letterSpacing: "0.06em", color: C.dimmer },
+  chipVerdict: { fontSize: 11, fontWeight: 700, color: C.bone, marginTop: 4 },
   chipHint: { fontSize: 9.5, color: C.dimmer, marginTop: 2 },
   chipValue: { fontSize: 9.5, color: C.dim, marginTop: 3, fontFamily: F.mono },
   strip: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6, marginBottom: 14 },
