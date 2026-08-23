@@ -39,17 +39,22 @@ source we have, plus the consensus and ADP.
 ## The math
 
 **Model value** (`src/lib/valueModel.js`) — the elboberto approach: value is
-derived from projected production, not from what other people paid.
+derived from projected production, not from what other people paid. Value comes
+in two tranches at different rates — what makes a player *rosterable* is cheap,
+what makes him *startable* is dear:
 
 ```
-points      = projected stat line scored by this league's rules
-replacement = best player at the position who doesn't start anywhere
-              (FLEX slots go to whichever RB/WR/TEs are genuinely next-best)
-VORP        = points − replacement
-dollars     = $1 + VORP × (competitive money / total VORP in the draftable pool)
+points        = projected stat line scored by this league's rules
+startBaseline = the last starter at his position (FLEX slots go by merit)
+benchBaseline = the last rostered player at his position
 
-competitive money = teams × budget − teams × roster slots   [$1 held per slot]
+value = (benchVORP − startVORP) × benchRate + startVORP × starterRate
 ```
+
+A single-baseline model funnels the whole budget into the ~84 starters and
+calls everyone else $1; this one prices the marginal starter at ~$11, which is
+what rooms actually pay. Verified against the 2025 elboberto workbook: 144
+players, **$0.002 mean difference**. See [docs/VALUE_MODEL.md](docs/VALUE_MODEL.md).
 
 **Budget inflation** (`src/lib/draftMath.js`) — global: is the room spending
 hot or cold?
@@ -62,7 +67,9 @@ budgetInflationMult = competitiveDollars / undraftedValue
 
 Above 1x means the room has money left over relative to the talent left, so
 expect to pay *more* than model value from here. Below 1x means the money is
-drained and players are about to go cheap.
+drained and players are about to go cheap. The gauge is log-scaled between
+0.5x and 2x, so 1.00x sits dead centre and a 25% premium is exactly as far
+right as a 25% discount is left.
 
 **Positional scarcity** — local: has one position dried up?
 
@@ -114,7 +121,16 @@ ambiguous team refuses to commit rather than guessing wrong.
 | `f` | flex filter (RB + WR + TE) |
 
 Before the draft, open Settings and paste your league's team names in one
-block, set the roster and scoring, and star your own team.
+block, set the roster and scoring, choose the platform under **Drafting on**,
+and star your own team.
+
+## Rooms
+
+One board, several leagues. Type a room name on the way in — `retrocade`,
+`lindor` — and each keeps its own managers, settings and picks. Bookmark
+`#room=retrocade` to skip the picker. Rooms live in your browser only; nothing
+is uploaded, so anyone else opening the site just gets an empty board. See
+[docs/ROOMS.md](docs/ROOMS.md).
 
 ## Data
 

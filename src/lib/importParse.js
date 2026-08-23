@@ -31,6 +31,12 @@ const PERCENT = /^\d{1,3}(\.\d+)?%$/;
 
 export function parseVerticalBlocks(lines) {
   const rows = [];
+  // Deep rows on Yahoo have no auction data at all — "294  -  -  1", where the
+  // only bare numbers are the rank and a $1 projection. Without the % column to
+  // mark where the money starts, a "last number wins" guess would import the
+  // *rank* as a dollar value. So when the paste uses percentages at all, a row
+  // without one is skipped rather than guessed at.
+  const usesPercent = lines.some((l) => PERCENT.test(l));
   for (let i = 0; i < lines.length; i++) {
     const m = TEAM_POS.exec(lines[i]);
     if (!m || i === 0) continue;
@@ -50,9 +56,11 @@ export function parseVerticalBlocks(lines) {
       if (numbers.length > 0) break;              // hit the next player's name
     }
     if (numbers.length === 0) continue;
+    if (usesPercent && !sawPercent) continue;
+    if (sawPercent && numbers.length <= percentAt) continue; // no money after the %
 
     // Money follows the % drafted column; before that it's ranks.
-    const value = sawPercent && numbers.length > percentAt ? numbers[percentAt] : numbers[numbers.length - 1];
+    const value = sawPercent ? numbers[percentAt] : numbers[numbers.length - 1];
     rows.push({ name, pos: normalizePos(m[2]), value: Math.round(value * 10) / 10, candidates: numbers });
   }
   return rows;
@@ -100,7 +108,39 @@ export function parseImport(text) {
   // A first row with no dollar figure in it is a header.
   const looksLikeHeader = !cells[0].some((c) => MONEY.test(c));
   const header = looksLikeHeader ? cells[0].map((c) => c.toLowerCase()) : null;
-  const body = looksLikeHeader ? cells.slice(1) : cells;
+  let body = looksLikeHeader ? cells.slice(1) : cells;
+
+  // FantasyPros' auction calculator (and similar per-position exports) copies
+  // out as several tables stitched together, one per position, each with its
+  // own repeated header row ("#  QB  Value", then "#  RB  Value", ...). Only
+  // the very first one is stripped above by the looksLikeHeader check; the
+  // rest land in the body as ordinary rows and poison column detection below
+  // — a "Value" cell sits in the same column as real dollar figures, which
+  // breaks the "every row matches" test numericCols relies on. A row with no
+  // dollar figure anywhere in it can never be real data, header repeat or
+  // not, so drop it — but first read off its position, so rows in that
+  // section can be tagged even though there's no dedicated position column.
+  let sectionTags = null;
+  if (looksLikeHeader) {
+    // The very first header row (unlike its repeats further down) is already
+    // gone by this point, sliced off above — seed the section from it too,
+    // so the rows before the first repeat aren't left untagged.
+    const firstPosCell = header.find((h) => POSITIONS.has(normalizePos(h)));
+    let sectionPos = firstPosCell ? normalizePos(firstPosCell) : null;
+    const kept = [];
+    const tags = [];
+    for (const r of body) {
+      if (!r.some((c) => MONEY.test(c))) {
+        const posCell = r.find((c) => POSITIONS.has(normalizePos(c)));
+        if (posCell) sectionPos = normalizePos(posCell);
+        continue;
+      }
+      kept.push(r);
+      tags.push(sectionPos);
+    }
+    body = kept;
+    sectionTags = tags;
+  }
   if (body.length === 0) {
     // Either a lone header, or text with no numbers in it at all — from the
     // paster's point of view these are the same problem.
@@ -119,11 +159,16 @@ export function parseImport(text) {
 
   const numericCols = columnIs((v) => MONEY.test(v));
   const posCols = columnIs((v) => POSITIONS.has(normalizePos(v)));
+  // A bare rank ("1.", "23") isn't MONEY (no digits follow a trailing dot)
+  // and isn't a position either, so without this it wins the "first
+  // non-numeric, non-position column" heuristic below and gets mistaken for
+  // the name column — FantasyPros' export leads with exactly this "#" column.
+  const rankCols = columnIs((v) => /^\d+\.?$/.test(v));
 
   // Name: prefer a header that says so, else the first column that's neither
-  // numeric nor a position.
+  // numeric, a position, nor a rank number.
   let nameIdx = header ? header.findIndex((h) => /name|player/.test(h)) : -1;
-  if (nameIdx === -1) nameIdx = numericCols.findIndex((isNum, i) => !isNum && !posCols[i]);
+  if (nameIdx === -1) nameIdx = numericCols.findIndex((isNum, i) => !isNum && !posCols[i] && !rankCols[i]);
   if (nameIdx === -1) {
     return { rows: [], warnings: ["Couldn't find a column of player names."], delimiter: delim };
   }
@@ -140,16 +185,22 @@ export function parseImport(text) {
   }
 
   const rows = [];
-  for (const r of body) {
-    const name = r[nameIdx];
+  body.forEach((r, i) => {
+    // FantasyPros (and other sites) put the team right in the name cell,
+    // comma-separated — "Josh Allen, BUF", sometimes with an injury badge
+    // stuck on with no space ("Patrick Mahomes II, KCDTD"). None of that is
+    // part of the name a normalized match will find, so it's dropped rather
+    // than fed to normalizeName, which would otherwise fold it into the key.
+    const rawName = r[nameIdx];
+    const name = rawName ? rawName.replace(/,.*$/, "").trim() : rawName;
     const rawValue = r[valueIdx];
-    if (!name || !MONEY.test(rawValue || "")) continue;
+    if (!name || !MONEY.test(rawValue || "")) return;
     rows.push({
       name,
-      pos: posIdx >= 0 && r[posIdx] ? normalizePos(r[posIdx]) : null,
+      pos: (posIdx >= 0 && r[posIdx] ? normalizePos(r[posIdx]) : null) || (sectionTags ? sectionTags[i] : null),
       value: Math.round(parseFloat(String(rawValue).replace("$", "")) * 10) / 10,
     });
-  }
+  });
 
   if (rows.length === 0) warnings.push("No rows had both a name and a dollar value.");
   return {

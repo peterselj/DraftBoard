@@ -103,6 +103,42 @@ test("filling a starting slot reduces demand for that position", () => {
     "once everyone has their starting QB, remaining QBs matter less");
 });
 
+test("changing league size doesn't corrupt the scarcity reading", () => {
+  // Model dollars scale with the size of the pot, so a baseline captured under
+  // one set of league settings is meaningless under another. Deriving the
+  // baseline from the whole pool (drafted players included) keeps both halves
+  // of the ratio in the same units, whatever the settings.
+  const players = pool();
+  for (const numTeams of [4, 8, 12, 16]) {
+    const s = { ...settings, numTeams };
+    const teams = defaultTeams(numTeams);
+    const live = computeLive(players, teams, s, computeBaseline(s, players));
+    for (const pos of ["QB", "RB", "WR", "TE"]) {
+      assert.equal(live.scarcityMult[pos].toFixed(2), "1.00",
+        `${numTeams}-team league should start neutral at ${pos}, got ${live.scarcityMult[pos].toFixed(2)}x`);
+    }
+  }
+});
+
+test("the FLEX reading tracks the combined skill-position pool", () => {
+  const players = pool();
+  const teams = defaultTeams(settings.numTeams);
+  const baseline = computeBaseline(settings, players);
+  assert.equal(computeLive(players, teams, settings, baseline).scarcityMult.FLEX.toFixed(2), "1.00");
+
+  // Drain the top of RB *and* WR: flex-eligible talent overall is thinner.
+  const drained = withPicks(players, ["RB0", "RB1", "RB2", "WR0", "WR1", "WR2"], teams, 5);
+  const after = computeLive(drained, teams, settings, baseline);
+  assert.ok(after.scarcityMult.FLEX > 1.02,
+    `FLEX should tighten, got ${after.scarcityMult.FLEX.toFixed(2)}x`);
+
+  // QB is not flex-eligible, so a run on quarterbacks must not move it.
+  const qbRun = withPicks(players, ["QB0", "QB1", "QB2", "QB3"], teams, 5);
+  const afterQb = computeLive(qbRun, teams, settings, baseline);
+  assert.ok(Math.abs(afterQb.scarcityMult.FLEX - 1) < 0.02,
+    `a QB run shouldn't move FLEX, got ${afterQb.scarcityMult.FLEX.toFixed(2)}x`);
+});
+
 test("position supply is measured in dollars above the floor", () => {
   const supply = positionSupply([
     { pos: "RB", model: 61 },

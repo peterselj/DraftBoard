@@ -1,0 +1,3337 @@
+{
+"_source": "elboberto 2025 Fantasy Football workbook v1.05, LeagueInfo defaults (12 teams, $200, 1QB/2RB/2WR/1TE/1FLEX/1K/1DEF/6BN, 88% starter share). Projected points and resulting dollar values are the workbook's own output, kept here purely as a regression fixture for src/lib/valueModel.js.",
+"settings": {
+"numTeams": 12,
+"budget": 200,
+"roster": {
+"QB": 1,
+"RB": 2,
+"WR": 2,
+"TE": 1,
+"FLEX": 1,
+"K": 1,
+"DEF": 1,
+"BENCH": 6
+},
+"starterShare": 0.88
+},
+"expected": {
+"starterRate": 0.3778,
+"benchRate": 0.1527,
+"availableMoney": 2376,
+"starters": {
+"QB": 12,
+"RB": 27,
+"WR": 33,
+"TE": 12
+}
+},
+"players": [
+{
+"name": "Josh Allen",
+"pos": "QB",
+"points": 376.35,
+"sheetValue": 36.203
+},
+{
+"name": "Lamar Jackson",
+"pos": "QB",
+"points": 373.01,
+"sheetValue": 34.939
+},
+{
+"name": "Jalen Hurts",
+"pos": "QB",
+"points": 358.4,
+"sheetValue": 29.421
+},
+{
+"name": "Jayden Daniels",
+"pos": "QB",
+"points": 355.98,
+"sheetValue": 28.509
+},
+{
+"name": "Joe Burrow",
+"pos": "QB",
+"points": 342.14,
+"sheetValue": 23.278
+},
+{
+"name": "Patrick Mahomes II",
+"pos": "QB",
+"points": 327.85,
+"sheetValue": 17.88
+},
+{
+"name": "Baker Mayfield",
+"pos": "QB",
+"points": 318.59,
+"sheetValue": 14.383
+},
+{
+"name": "Kyler Murray",
+"pos": "QB",
+"points": 316.43,
+"sheetValue": 13.568
+},
+{
+"name": "Brock Purdy",
+"pos": "QB",
+"points": 311.8,
+"sheetValue": 11.817
+},
+{
+"name": "Bo Nix",
+"pos": "QB",
+"points": 308.79,
+"sheetValue": 10.681
+},
+{
+"name": "Justin Fields",
+"pos": "QB",
+"points": 299.94,
+"sheetValue": 7.337
+},
+{
+"name": "J.J. McCarthy",
+"pos": "QB",
+"points": 292.7,
+"sheetValue": 4.604
+},
+{
+"name": "Dak Prescott",
+"pos": "QB",
+"points": 292.06,
+"sheetValue": 4.506
+},
+{
+"name": "Justin Herbert",
+"pos": "QB",
+"points": 291.29,
+"sheetValue": 4.388
+},
+{
+"name": "Caleb Williams",
+"pos": "QB",
+"points": 289.47,
+"sheetValue": 4.111
+},
+{
+"name": "Jared Goff",
+"pos": "QB",
+"points": 286.49,
+"sheetValue": 3.656
+},
+{
+"name": "C.J. Stroud",
+"pos": "QB",
+"points": 280.47,
+"sheetValue": 2.736
+},
+{
+"name": "Jordan Love",
+"pos": "QB",
+"points": 278.32,
+"sheetValue": 2.408
+},
+{
+"name": "Drake Maye",
+"pos": "QB",
+"points": 277.95,
+"sheetValue": 2.352
+},
+{
+"name": "Trevor Lawrence",
+"pos": "QB",
+"points": 274.87,
+"sheetValue": 1.882
+},
+{
+"name": "Bryce Young",
+"pos": "QB",
+"points": 263.43,
+"sheetValue": 0.135
+},
+{
+"name": "Michael Penix Jr.",
+"pos": "QB",
+"points": 263.36,
+"sheetValue": 0.124
+},
+{
+"name": "Tua Tagovailoa",
+"pos": "QB",
+"points": 262.54,
+"sheetValue": 0
+},
+{
+"name": "Matthew Stafford",
+"pos": "QB",
+"points": 261.29,
+"sheetValue": -0.192
+},
+{
+"name": "Geno Smith",
+"pos": "QB",
+"points": 260.79,
+"sheetValue": -0.268
+},
+{
+"name": "Cam Ward",
+"pos": "QB",
+"points": 255.21,
+"sheetValue": -1.119
+},
+{
+"name": "Sam Darnold",
+"pos": "QB",
+"points": 254.98,
+"sheetValue": -1.154
+},
+{
+"name": "Aaron Rodgers",
+"pos": "QB",
+"points": 236.79,
+"sheetValue": -3.932
+},
+{
+"name": "Daniel Jones",
+"pos": "QB",
+"points": 229.06,
+"sheetValue": -5.112
+},
+{
+"name": "Russell Wilson",
+"pos": "QB",
+"points": 195.45,
+"sheetValue": -10.243
+},
+{
+"name": "Spencer Rattler",
+"pos": "QB",
+"points": 163.15,
+"sheetValue": -15.173
+},
+{
+"name": "Joe Flacco",
+"pos": "QB",
+"points": 156.09,
+"sheetValue": -16.251
+},
+{
+"name": "Tyler Shough",
+"pos": "QB",
+"points": 101.54,
+"sheetValue": -24.579
+},
+{
+"name": "Anthony Richardson Sr.",
+"pos": "QB",
+"points": 58.31,
+"sheetValue": -31.179
+},
+{
+"name": "Jaxson Dart",
+"pos": "QB",
+"points": 56.69,
+"sheetValue": -31.426
+},
+{
+"name": "Shedeur Sanders",
+"pos": "QB",
+"points": 50.87,
+"sheetValue": -32.315
+},
+{
+"name": "Dillon Gabriel",
+"pos": "QB",
+"points": 49.72,
+"sheetValue": -32.49
+},
+{
+"name": "Jalen Milroe",
+"pos": "QB",
+"points": 23.92,
+"sheetValue": -36.429
+},
+{
+"name": "Mason Rudolph",
+"pos": "QB",
+"points": 18.74,
+"sheetValue": -37.22
+},
+{
+"name": "Malik Willis",
+"pos": "QB",
+"points": 16.62,
+"sheetValue": -37.544
+},
+{
+"name": "Jimmy Garoppolo",
+"pos": "QB",
+"points": 16.41,
+"sheetValue": -37.576
+},
+{
+"name": "Jameis Winston",
+"pos": "QB",
+"points": 16.33,
+"sheetValue": -37.587
+},
+{
+"name": "Marcus Mariota",
+"pos": "QB",
+"points": 13.22,
+"sheetValue": -38.062
+},
+{
+"name": "Mac Jones",
+"pos": "QB",
+"points": 12.42,
+"sheetValue": -38.185
+},
+{
+"name": "Joshua Dobbs",
+"pos": "QB",
+"points": 12.29,
+"sheetValue": -38.204
+},
+{
+"name": "Zach Wilson",
+"pos": "QB",
+"points": 11.88,
+"sheetValue": -38.267
+},
+{
+"name": "Tyrod Taylor",
+"pos": "QB",
+"points": 11.66,
+"sheetValue": -38.301
+},
+{
+"name": "Jake Browning",
+"pos": "QB",
+"points": 11.12,
+"sheetValue": -38.382
+},
+{
+"name": "Gardner Minshew II",
+"pos": "QB",
+"points": 10.24,
+"sheetValue": -38.518
+},
+{
+"name": "Aidan O'Connell",
+"pos": "QB",
+"points": 10.14,
+"sheetValue": -38.533
+},
+{
+"name": "Joe Milton III",
+"pos": "QB",
+"points": 9.89,
+"sheetValue": -38.57
+},
+{
+"name": "Tyson Bagent",
+"pos": "QB",
+"points": 9.41,
+"sheetValue": -38.644
+},
+{
+"name": "Jacoby Brissett",
+"pos": "QB",
+"points": 9.18,
+"sheetValue": -38.68
+},
+{
+"name": "Jarrett Stidham",
+"pos": "QB",
+"points": 8.99,
+"sheetValue": -38.709
+},
+{
+"name": "Nick Mullens",
+"pos": "QB",
+"points": 8.65,
+"sheetValue": -38.76
+},
+{
+"name": "Sam Howell",
+"pos": "QB",
+"points": 8.4,
+"sheetValue": -38.798
+},
+{
+"name": "Davis Mills",
+"pos": "QB",
+"points": 8.39,
+"sheetValue": -38.8
+},
+{
+"name": "Tanner McKee",
+"pos": "QB",
+"points": 8.19,
+"sheetValue": -38.83
+},
+{
+"name": "Andy Dalton",
+"pos": "QB",
+"points": 8.1,
+"sheetValue": -38.844
+},
+{
+"name": "Mitchell Trubisky",
+"pos": "QB",
+"points": 7.93,
+"sheetValue": -38.869
+},
+{
+"name": "Kenny Pickett",
+"pos": "QB",
+"points": 7.87,
+"sheetValue": -38.879
+},
+{
+"name": "Teddy Bridgewater",
+"pos": "QB",
+"points": 7.84,
+"sheetValue": -38.884
+},
+{
+"name": "Trey Lance",
+"pos": "QB",
+"points": 7.76,
+"sheetValue": -38.896
+},
+{
+"name": "Brandon Allen",
+"pos": "QB",
+"points": 7.71,
+"sheetValue": -38.904
+},
+{
+"name": "Drew Lock",
+"pos": "QB",
+"points": 7.69,
+"sheetValue": -38.907
+},
+{
+"name": "Cooper Rush",
+"pos": "QB",
+"points": 7.42,
+"sheetValue": -38.948
+},
+{
+"name": "Carson Wentz",
+"pos": "QB",
+"points": 7.34,
+"sheetValue": -38.961
+},
+{
+"name": "Kirk Cousins",
+"pos": "QB",
+"points": 7.24,
+"sheetValue": -38.976
+},
+{
+"name": "Deshaun Watson",
+"pos": "QB",
+"points": 6.66,
+"sheetValue": -39.064
+},
+{
+"name": "Hendon Hooker",
+"pos": "QB",
+"points": 6.44,
+"sheetValue": -39.098
+},
+{
+"name": "Kyle Allen",
+"pos": "QB",
+"points": 6.23,
+"sheetValue": -39.129
+},
+{
+"name": "Quinn Ewers",
+"pos": "QB",
+"points": 6.2,
+"sheetValue": -39.134
+},
+{
+"name": "Graham Mertz",
+"pos": "QB",
+"points": 4.78,
+"sheetValue": -39.351
+},
+{
+"name": "Will Howard",
+"pos": "QB",
+"points": 4.68,
+"sheetValue": -39.366
+},
+{
+"name": "Case Keenum",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Josh Johnson",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Skylar Thompson",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Will Levis",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Stetson Bennett IV",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Kurtis Rourke",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Riley Leonard",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Trevor Siemian",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Brett Rypien",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Easton Stick",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Sam Ehlinger",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Bailey Zappe",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Shane Buechele",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Jake Haener",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Tommy DeVito",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Cam Miller",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Kyle McCord",
+"pos": "QB",
+"points": 0,
+"sheetValue": -40.081
+},
+{
+"name": "Saquon Barkley",
+"pos": "RB",
+"points": 299.53,
+"sheetValue": 62.673
+},
+{
+"name": "Bijan Robinson",
+"pos": "RB",
+"points": 295.97,
+"sheetValue": 61.328
+},
+{
+"name": "Jahmyr Gibbs",
+"pos": "RB",
+"points": 287.94,
+"sheetValue": 58.295
+},
+{
+"name": "Christian McCaffrey",
+"pos": "RB",
+"points": 267.47,
+"sheetValue": 50.562
+},
+{
+"name": "Derrick Henry",
+"pos": "RB",
+"points": 263.71,
+"sheetValue": 49.142
+},
+{
+"name": "De'Von Achane",
+"pos": "RB",
+"points": 252.05,
+"sheetValue": 44.737
+},
+{
+"name": "Josh Jacobs",
+"pos": "RB",
+"points": 248.24,
+"sheetValue": 43.298
+},
+{
+"name": "Jonathan Taylor",
+"pos": "RB",
+"points": 244.22,
+"sheetValue": 41.779
+},
+{
+"name": "Ashton Jeanty",
+"pos": "RB",
+"points": 241.61,
+"sheetValue": 40.794
+},
+{
+"name": "Kyren Williams",
+"pos": "RB",
+"points": 238.3,
+"sheetValue": 39.543
+},
+{
+"name": "Chase Brown",
+"pos": "RB",
+"points": 237.57,
+"sheetValue": 39.267
+},
+{
+"name": "Bucky Irving",
+"pos": "RB",
+"points": 232.56,
+"sheetValue": 37.375
+},
+{
+"name": "James Cook",
+"pos": "RB",
+"points": 217.43,
+"sheetValue": 31.66
+},
+{
+"name": "James Conner",
+"pos": "RB",
+"points": 210.84,
+"sheetValue": 29.17
+},
+{
+"name": "Alvin Kamara",
+"pos": "RB",
+"points": 210.79,
+"sheetValue": 29.151
+},
+{
+"name": "Chuba Hubbard",
+"pos": "RB",
+"points": 206.57,
+"sheetValue": 27.557
+},
+{
+"name": "Breece Hall",
+"pos": "RB",
+"points": 201.45,
+"sheetValue": 25.623
+},
+{
+"name": "Kenneth Walker III",
+"pos": "RB",
+"points": 200.56,
+"sheetValue": 25.287
+},
+{
+"name": "Omarion Hampton",
+"pos": "RB",
+"points": 200.37,
+"sheetValue": 25.215
+},
+{
+"name": "Tony Pollard",
+"pos": "RB",
+"points": 192.03,
+"sheetValue": 22.065
+},
+{
+"name": "D'Andre Swift",
+"pos": "RB",
+"points": 184.63,
+"sheetValue": 19.269
+},
+{
+"name": "TreVeyon Henderson",
+"pos": "RB",
+"points": 184.21,
+"sheetValue": 19.111
+},
+{
+"name": "David Montgomery",
+"pos": "RB",
+"points": 182.56,
+"sheetValue": 18.487
+},
+{
+"name": "Aaron Jones Sr.",
+"pos": "RB",
+"points": 181.08,
+"sheetValue": 17.928
+},
+{
+"name": "RJ Harvey",
+"pos": "RB",
+"points": 169.08,
+"sheetValue": 13.395
+},
+{
+"name": "Isiah Pacheco",
+"pos": "RB",
+"points": 166.08,
+"sheetValue": 12.262
+},
+{
+"name": "Tyrone Tracy Jr.",
+"pos": "RB",
+"points": 163.0,
+"sheetValue": 11.099
+},
+{
+"name": "Kaleb Johnson",
+"pos": "RB",
+"points": 157.37,
+"sheetValue": 10.239
+},
+{
+"name": "Jaylen Warren",
+"pos": "RB",
+"points": 154.67,
+"sheetValue": 9.827
+},
+{
+"name": "Austin Ekeler",
+"pos": "RB",
+"points": 146.97,
+"sheetValue": 8.651
+},
+{
+"name": "Jacory Croskey-Merritt",
+"pos": "RB",
+"points": 139.49,
+"sheetValue": 7.509
+},
+{
+"name": "Zach Charbonnet",
+"pos": "RB",
+"points": 137.33,
+"sheetValue": 7.18
+},
+{
+"name": "Joe Mixon",
+"pos": "RB",
+"points": 136.9,
+"sheetValue": 7.114
+},
+{
+"name": "Javonte Williams",
+"pos": "RB",
+"points": 134.15,
+"sheetValue": 6.694
+},
+{
+"name": "J.K. Dobbins",
+"pos": "RB",
+"points": 132.79,
+"sheetValue": 6.487
+},
+{
+"name": "Travis Etienne Jr.",
+"pos": "RB",
+"points": 131.38,
+"sheetValue": 6.271
+},
+{
+"name": "Jordan Mason",
+"pos": "RB",
+"points": 127.08,
+"sheetValue": 5.615
+},
+{
+"name": "Rhamondre Stevenson",
+"pos": "RB",
+"points": 125.92,
+"sheetValue": 5.438
+},
+{
+"name": "Jerome Ford",
+"pos": "RB",
+"points": 119.46,
+"sheetValue": 4.452
+},
+{
+"name": "Rachaad White",
+"pos": "RB",
+"points": 113.12,
+"sheetValue": 3.484
+},
+{
+"name": "Quinshon Judkins",
+"pos": "RB",
+"points": 112.58,
+"sheetValue": 3.401
+},
+{
+"name": "Cam Skattebo",
+"pos": "RB",
+"points": 104.91,
+"sheetValue": 2.23
+},
+{
+"name": "Tank Bigsby",
+"pos": "RB",
+"points": 103.94,
+"sheetValue": 2.082
+},
+{
+"name": "Nick Chubb",
+"pos": "RB",
+"points": 103.59,
+"sheetValue": 2.029
+},
+{
+"name": "Dylan Sampson",
+"pos": "RB",
+"points": 103.16,
+"sheetValue": 1.963
+},
+{
+"name": "Trey Benson",
+"pos": "RB",
+"points": 102.04,
+"sheetValue": 1.792
+},
+{
+"name": "Jaydon Blue",
+"pos": "RB",
+"points": 101.41,
+"sheetValue": 1.696
+},
+{
+"name": "Najee Harris",
+"pos": "RB",
+"points": 96.71,
+"sheetValue": 0.979
+},
+{
+"name": "Tyler Allgeier",
+"pos": "RB",
+"points": 93.29,
+"sheetValue": 0.456
+},
+{
+"name": "Ray Davis",
+"pos": "RB",
+"points": 91.29,
+"sheetValue": 0.151
+},
+{
+"name": "Tyjae Spears",
+"pos": "RB",
+"points": 90.3,
+"sheetValue": 0
+},
+{
+"name": "Bhayshul Tuten",
+"pos": "RB",
+"points": 90.27,
+"sheetValue": -0.005
+},
+{
+"name": "Braelon Allen",
+"pos": "RB",
+"points": 87.12,
+"sheetValue": -0.485
+},
+{
+"name": "Rico Dowdle",
+"pos": "RB",
+"points": 86.8,
+"sheetValue": -0.534
+},
+{
+"name": "Kareem Hunt",
+"pos": "RB",
+"points": 82.37,
+"sheetValue": -1.211
+},
+{
+"name": "Kendre Miller",
+"pos": "RB",
+"points": 79.09,
+"sheetValue": -1.711
+},
+{
+"name": "Jaylen Wright",
+"pos": "RB",
+"points": 77.24,
+"sheetValue": -1.994
+},
+{
+"name": "Roschon Johnson",
+"pos": "RB",
+"points": 74.65,
+"sheetValue": -2.389
+},
+{
+"name": "Brian Robinson Jr.",
+"pos": "RB",
+"points": 74.51,
+"sheetValue": -2.411
+},
+{
+"name": "Ollie Gordon II",
+"pos": "RB",
+"points": 72.84,
+"sheetValue": -2.665
+},
+{
+"name": "Justice Hill",
+"pos": "RB",
+"points": 70.3,
+"sheetValue": -3.053
+},
+{
+"name": "Blake Corum",
+"pos": "RB",
+"points": 65.23,
+"sheetValue": -3.827
+},
+{
+"name": "MarShawn Lloyd",
+"pos": "RB",
+"points": 64.78,
+"sheetValue": -3.896
+},
+{
+"name": "Raheem Mostert",
+"pos": "RB",
+"points": 60.86,
+"sheetValue": -4.494
+},
+{
+"name": "Woody Marks",
+"pos": "RB",
+"points": 59.26,
+"sheetValue": -4.739
+},
+{
+"name": "Miles Sanders",
+"pos": "RB",
+"points": 59.08,
+"sheetValue": -4.766
+},
+{
+"name": "Keaton Mitchell",
+"pos": "RB",
+"points": 58.48,
+"sheetValue": -4.858
+},
+{
+"name": "Ty Johnson",
+"pos": "RB",
+"points": 58.36,
+"sheetValue": -4.876
+},
+{
+"name": "Chris Rodriguez Jr.",
+"pos": "RB",
+"points": 55.78,
+"sheetValue": -5.27
+},
+{
+"name": "Samaje Perine",
+"pos": "RB",
+"points": 54.47,
+"sheetValue": -5.47
+},
+{
+"name": "Antonio Gibson",
+"pos": "RB",
+"points": 52.1,
+"sheetValue": -5.832
+},
+{
+"name": "Zamir White",
+"pos": "RB",
+"points": 51.4,
+"sheetValue": -5.939
+},
+{
+"name": "Devin Neal",
+"pos": "RB",
+"points": 49.27,
+"sheetValue": -6.264
+},
+{
+"name": "Kyle Monangai",
+"pos": "RB",
+"points": 49.11,
+"sheetValue": -6.288
+},
+{
+"name": "Kenneth Gainwell",
+"pos": "RB",
+"points": 48.93,
+"sheetValue": -6.316
+},
+{
+"name": "Jarquez Hunter",
+"pos": "RB",
+"points": 47.78,
+"sheetValue": -6.491
+},
+{
+"name": "Jaleel McLaughlin",
+"pos": "RB",
+"points": 46.84,
+"sheetValue": -6.635
+},
+{
+"name": "Isaac Guerendo",
+"pos": "RB",
+"points": 45.64,
+"sheetValue": -6.818
+},
+{
+"name": "Tahj Brooks",
+"pos": "RB",
+"points": 44.41,
+"sheetValue": -7.006
+},
+{
+"name": "Trevor Etienne",
+"pos": "RB",
+"points": 44.05,
+"sheetValue": -7.061
+},
+{
+"name": "Will Shipley",
+"pos": "RB",
+"points": 44.05,
+"sheetValue": -7.061
+},
+{
+"name": "Devin Singletary",
+"pos": "RB",
+"points": 43.56,
+"sheetValue": -7.135
+},
+{
+"name": "Emanuel Wilson",
+"pos": "RB",
+"points": 40.36,
+"sheetValue": -7.624
+},
+{
+"name": "Elijah Mitchell",
+"pos": "RB",
+"points": 39.55,
+"sheetValue": -7.748
+},
+{
+"name": "Sean Tucker",
+"pos": "RB",
+"points": 38.55,
+"sheetValue": -7.9
+},
+{
+"name": "DJ Giddens",
+"pos": "RB",
+"points": 34.16,
+"sheetValue": -8.57
+},
+{
+"name": "Tyler Goodson",
+"pos": "RB",
+"points": 33.71,
+"sheetValue": -8.639
+},
+{
+"name": "Julius Chestnut",
+"pos": "RB",
+"points": 33.69,
+"sheetValue": -8.642
+},
+{
+"name": "Kyle Juszczyk",
+"pos": "RB",
+"points": 29.5,
+"sheetValue": -9.282
+},
+{
+"name": "A.J. Dillon",
+"pos": "RB",
+"points": 28.43,
+"sheetValue": -9.445
+},
+{
+"name": "Isaiah Davis",
+"pos": "RB",
+"points": 27.22,
+"sheetValue": -9.63
+},
+{
+"name": "Dameon Pierce",
+"pos": "RB",
+"points": 27.15,
+"sheetValue": -9.641
+},
+{
+"name": "Brashard Smith",
+"pos": "RB",
+"points": 26.3,
+"sheetValue": -9.77
+},
+{
+"name": "Chris Brooks",
+"pos": "RB",
+"points": 25.79,
+"sheetValue": -9.848
+},
+{
+"name": "Zavier Scott",
+"pos": "RB",
+"points": 25.7,
+"sheetValue": -9.862
+},
+{
+"name": "Kalel Mullings",
+"pos": "RB",
+"points": 23.2,
+"sheetValue": -10.244
+},
+{
+"name": "Emari Demercado",
+"pos": "RB",
+"points": 23.09,
+"sheetValue": -10.26
+},
+{
+"name": "Hassan Haskins",
+"pos": "RB",
+"points": 21.5,
+"sheetValue": -10.503
+},
+{
+"name": "Ty Chandler",
+"pos": "RB",
+"points": 20.56,
+"sheetValue": -10.647
+},
+{
+"name": "Jeremy McNichols",
+"pos": "RB",
+"points": 18.78,
+"sheetValue": -10.918
+},
+{
+"name": "George Holani",
+"pos": "RB",
+"points": 17.09,
+"sheetValue": -11.176
+},
+{
+"name": "Craig Reynolds",
+"pos": "RB",
+"points": 15.76,
+"sheetValue": -11.379
+},
+{
+"name": "LeQuint Allen Jr.",
+"pos": "RB",
+"points": 15.18,
+"sheetValue": -11.468
+},
+{
+"name": "Phil Mafah",
+"pos": "RB",
+"points": 15.07,
+"sheetValue": -11.485
+},
+{
+"name": "Alec Ingold",
+"pos": "RB",
+"points": 14.83,
+"sheetValue": -11.521
+},
+{
+"name": "Dare Ogunbowale",
+"pos": "RB",
+"points": 14.79,
+"sheetValue": -11.528
+},
+{
+"name": "Travis Homer",
+"pos": "RB",
+"points": 12.99,
+"sheetValue": -11.802
+},
+{
+"name": "C.J. Ham",
+"pos": "RB",
+"points": 11.41,
+"sheetValue": -12.044
+},
+{
+"name": "Jordan James",
+"pos": "RB",
+"points": 10.4,
+"sheetValue": -12.198
+},
+{
+"name": "Patrick Ricard",
+"pos": "RB",
+"points": 9.19,
+"sheetValue": -12.382
+},
+{
+"name": "Terrell Jennings",
+"pos": "RB",
+"points": 8.62,
+"sheetValue": -12.469
+},
+{
+"name": "Nathan Carter",
+"pos": "RB",
+"points": 8.61,
+"sheetValue": -12.471
+},
+{
+"name": "Eric Gray",
+"pos": "RB",
+"points": 7.46,
+"sheetValue": -12.647
+},
+{
+"name": "Hunter Luepke",
+"pos": "RB",
+"points": 7.26,
+"sheetValue": -12.677
+},
+{
+"name": "Zonovan Knight",
+"pos": "RB",
+"points": 7.01,
+"sheetValue": -12.715
+},
+{
+"name": "Rasheen Ali",
+"pos": "RB",
+"points": 6.25,
+"sheetValue": -12.831
+},
+{
+"name": "Trey Sermon",
+"pos": "RB",
+"points": 5.21,
+"sheetValue": -12.99
+},
+{
+"name": "Raheim Sanders",
+"pos": "RB",
+"points": 4.6,
+"sheetValue": -13.083
+},
+{
+"name": "Velus Jones Jr.",
+"pos": "RB",
+"points": 4.48,
+"sheetValue": -13.102
+},
+{
+"name": "Dylan Laube",
+"pos": "RB",
+"points": 4.29,
+"sheetValue": -13.131
+},
+{
+"name": "Carlos Washington Jr.",
+"pos": "RB",
+"points": 4.2,
+"sheetValue": -13.144
+},
+{
+"name": "Michael Carter",
+"pos": "RB",
+"points": 3.95,
+"sheetValue": -13.182
+},
+{
+"name": "Scott Matlock",
+"pos": "RB",
+"points": 3.17,
+"sheetValue": -13.301
+},
+{
+"name": "Robbie Ouzts",
+"pos": "RB",
+"points": 3.09,
+"sheetValue": -13.314
+},
+{
+"name": "Damien Martinez",
+"pos": "RB",
+"points": 2.9,
+"sheetValue": -13.343
+},
+{
+"name": "Josh Williams",
+"pos": "RB",
+"points": 2.47,
+"sheetValue": -13.408
+},
+{
+"name": "Tyler Badie",
+"pos": "RB",
+"points": 1.65,
+"sheetValue": -13.534
+},
+{
+"name": "Sione Vaki",
+"pos": "RB",
+"points": 1.05,
+"sheetValue": -13.625
+},
+{
+"name": "Michael Burton",
+"pos": "RB",
+"points": 0,
+"sheetValue": -13.785
+},
+{
+"name": "Andrew Beck",
+"pos": "RB",
+"points": 0,
+"sheetValue": -13.785
+},
+{
+"name": "Salvon Ahmed",
+"pos": "RB",
+"points": 0,
+"sheetValue": -13.785
+},
+{
+"name": "Reggie Gilliam",
+"pos": "RB",
+"points": 0,
+"sheetValue": -13.785
+},
+{
+"name": "Kene Nwangwu",
+"pos": "RB",
+"points": 0,
+"sheetValue": -13.785
+},
+{
+"name": "Keaontay Ingram",
+"pos": "RB",
+"points": 0,
+"sheetValue": -13.785
+},
+{
+"name": "Deneric Prince",
+"pos": "RB",
+"points": 0,
+"sheetValue": -13.785
+},
+{
+"name": "Ben VanSumeren",
+"pos": "RB",
+"points": 0,
+"sheetValue": -13.785
+},
+{
+"name": "Jermar Jefferson",
+"pos": "RB",
+"points": 0,
+"sheetValue": -13.785
+},
+{
+"name": "Ja'Marr Chase",
+"pos": "WR",
+"points": 292.26,
+"sheetValue": 57.212
+},
+{
+"name": "Justin Jefferson",
+"pos": "WR",
+"points": 258.14,
+"sheetValue": 44.323
+},
+{
+"name": "CeeDee Lamb",
+"pos": "WR",
+"points": 246.88,
+"sheetValue": 40.07
+},
+{
+"name": "Puka Nacua",
+"pos": "WR",
+"points": 238.78,
+"sheetValue": 37.01
+},
+{
+"name": "Malik Nabers",
+"pos": "WR",
+"points": 237.21,
+"sheetValue": 36.417
+},
+{
+"name": "Amon-Ra St. Brown",
+"pos": "WR",
+"points": 234.34,
+"sheetValue": 35.333
+},
+{
+"name": "Nico Collins",
+"pos": "WR",
+"points": 230.41,
+"sheetValue": 33.848
+},
+{
+"name": "Brian Thomas Jr.",
+"pos": "WR",
+"points": 228.51,
+"sheetValue": 33.13
+},
+{
+"name": "Drake London",
+"pos": "WR",
+"points": 219.71,
+"sheetValue": 29.806
+},
+{
+"name": "A.J. Brown",
+"pos": "WR",
+"points": 215.87,
+"sheetValue": 28.356
+},
+{
+"name": "Tyreek Hill",
+"pos": "WR",
+"points": 215.13,
+"sheetValue": 28.076
+},
+{
+"name": "Ladd McConkey",
+"pos": "WR",
+"points": 209.4,
+"sheetValue": 25.911
+},
+{
+"name": "Mike Evans",
+"pos": "WR",
+"points": 206.84,
+"sheetValue": 24.944
+},
+{
+"name": "Tee Higgins",
+"pos": "WR",
+"points": 204.88,
+"sheetValue": 24.204
+},
+{
+"name": "Terry McLaurin",
+"pos": "WR",
+"points": 202.83,
+"sheetValue": 23.43
+},
+{
+"name": "Davante Adams",
+"pos": "WR",
+"points": 201.66,
+"sheetValue": 22.988
+},
+{
+"name": "Jaxon Smith-Njigba",
+"pos": "WR",
+"points": 198.76,
+"sheetValue": 21.892
+},
+{
+"name": "DK Metcalf",
+"pos": "WR",
+"points": 195.55,
+"sheetValue": 20.68
+},
+{
+"name": "Marvin Harrison Jr.",
+"pos": "WR",
+"points": 192.28,
+"sheetValue": 19.444
+},
+{
+"name": "DJ Moore",
+"pos": "WR",
+"points": 191.17,
+"sheetValue": 19.025
+},
+{
+"name": "Garrett Wilson",
+"pos": "WR",
+"points": 189.69,
+"sheetValue": 18.466
+},
+{
+"name": "Zay Flowers",
+"pos": "WR",
+"points": 186.24,
+"sheetValue": 17.163
+},
+{
+"name": "Xavier Worthy",
+"pos": "WR",
+"points": 185.04,
+"sheetValue": 16.709
+},
+{
+"name": "Courtland Sutton",
+"pos": "WR",
+"points": 182.64,
+"sheetValue": 15.803
+},
+{
+"name": "DeVonta Smith",
+"pos": "WR",
+"points": 178.67,
+"sheetValue": 14.303
+},
+{
+"name": "Jerry Jeudy",
+"pos": "WR",
+"points": 178.51,
+"sheetValue": 14.243
+},
+{
+"name": "Calvin Ridley",
+"pos": "WR",
+"points": 177.82,
+"sheetValue": 13.982
+},
+{
+"name": "Tetairoa McMillan",
+"pos": "WR",
+"points": 175.28,
+"sheetValue": 13.023
+},
+{
+"name": "George Pickens",
+"pos": "WR",
+"points": 174.79,
+"sheetValue": 12.838
+},
+{
+"name": "Jameson Williams",
+"pos": "WR",
+"points": 173.5,
+"sheetValue": 12.35
+},
+{
+"name": "Jaylen Waddle",
+"pos": "WR",
+"points": 169.48,
+"sheetValue": 10.832
+},
+{
+"name": "Deebo Samuel Sr.",
+"pos": "WR",
+"points": 165.15,
+"sheetValue": 9.196
+},
+{
+"name": "Ricky Pearsall",
+"pos": "WR",
+"points": 162.71,
+"sheetValue": 8.274
+},
+{
+"name": "Jakobi Meyers",
+"pos": "WR",
+"points": 160.25,
+"sheetValue": 7.899
+},
+{
+"name": "Matthew Golden",
+"pos": "WR",
+"points": 159.39,
+"sheetValue": 7.767
+},
+{
+"name": "Travis Hunter",
+"pos": "WR",
+"points": 159.08,
+"sheetValue": 7.72
+},
+{
+"name": "Jauan Jennings",
+"pos": "WR",
+"points": 158.16,
+"sheetValue": 7.58
+},
+{
+"name": "Chris Olave",
+"pos": "WR",
+"points": 156.83,
+"sheetValue": 7.377
+},
+{
+"name": "Stefon Diggs",
+"pos": "WR",
+"points": 156.1,
+"sheetValue": 7.265
+},
+{
+"name": "Rome Odunze",
+"pos": "WR",
+"points": 155.99,
+"sheetValue": 7.248
+},
+{
+"name": "Cooper Kupp",
+"pos": "WR",
+"points": 155.94,
+"sheetValue": 7.241
+},
+{
+"name": "Michael Pittman Jr.",
+"pos": "WR",
+"points": 151.52,
+"sheetValue": 6.566
+},
+{
+"name": "Emeka Egbuka",
+"pos": "WR",
+"points": 147.64,
+"sheetValue": 5.974
+},
+{
+"name": "Jayden Reed",
+"pos": "WR",
+"points": 146.69,
+"sheetValue": 5.829
+},
+{
+"name": "Jordan Addison",
+"pos": "WR",
+"points": 146.18,
+"sheetValue": 5.751
+},
+{
+"name": "Khalil Shakir",
+"pos": "WR",
+"points": 145.84,
+"sheetValue": 5.699
+},
+{
+"name": "Keon Coleman",
+"pos": "WR",
+"points": 144.61,
+"sheetValue": 5.511
+},
+{
+"name": "Rashee Rice",
+"pos": "WR",
+"points": 144.34,
+"sheetValue": 5.47
+},
+{
+"name": "Rashid Shaheed",
+"pos": "WR",
+"points": 143.23,
+"sheetValue": 5.3
+},
+{
+"name": "Chris Godwin Jr.",
+"pos": "WR",
+"points": 142.06,
+"sheetValue": 5.122
+},
+{
+"name": "Darnell Mooney",
+"pos": "WR",
+"points": 139.14,
+"sheetValue": 4.676
+},
+{
+"name": "Josh Downs",
+"pos": "WR",
+"points": 138.16,
+"sheetValue": 4.526
+},
+{
+"name": "Marvin Mims Jr.",
+"pos": "WR",
+"points": 132.42,
+"sheetValue": 3.65
+},
+{
+"name": "Rashod Bateman",
+"pos": "WR",
+"points": 130.03,
+"sheetValue": 3.285
+},
+{
+"name": "Cedric Tillman",
+"pos": "WR",
+"points": 125.65,
+"sheetValue": 2.617
+},
+{
+"name": "Marquise Brown",
+"pos": "WR",
+"points": 123.75,
+"sheetValue": 2.327
+},
+{
+"name": "Keenan Allen",
+"pos": "WR",
+"points": 119.67,
+"sheetValue": 1.704
+},
+{
+"name": "Xavier Legette",
+"pos": "WR",
+"points": 117.98,
+"sheetValue": 1.446
+},
+{
+"name": "Christian Kirk",
+"pos": "WR",
+"points": 117.7,
+"sheetValue": 1.403
+},
+{
+"name": "Wan'Dale Robinson",
+"pos": "WR",
+"points": 116.48,
+"sheetValue": 1.217
+},
+{
+"name": "Jayden Higgins",
+"pos": "WR",
+"points": 113.99,
+"sheetValue": 0.837
+},
+{
+"name": "DeMario Douglas",
+"pos": "WR",
+"points": 108.51,
+"sheetValue": 0
+},
+{
+"name": "Romeo Doubs",
+"pos": "WR",
+"points": 107.33,
+"sheetValue": -0.18
+},
+{
+"name": "Tyler Lockett",
+"pos": "WR",
+"points": 105.8,
+"sheetValue": -0.414
+},
+{
+"name": "Brandon Aiyuk",
+"pos": "WR",
+"points": 105.32,
+"sheetValue": -0.487
+},
+{
+"name": "Joshua Palmer",
+"pos": "WR",
+"points": 105.29,
+"sheetValue": -0.492
+},
+{
+"name": "Luther Burden III",
+"pos": "WR",
+"points": 101.59,
+"sheetValue": -1.056
+},
+{
+"name": "Michael Wilson",
+"pos": "WR",
+"points": 101.14,
+"sheetValue": -1.125
+},
+{
+"name": "Adam Thielen",
+"pos": "WR",
+"points": 100.75,
+"sheetValue": -1.185
+},
+{
+"name": "Calvin Austin III",
+"pos": "WR",
+"points": 96.76,
+"sheetValue": -1.794
+},
+{
+"name": "Tre' Harris",
+"pos": "WR",
+"points": 94.24,
+"sheetValue": -2.178
+},
+{
+"name": "Ray-Ray McCloud III",
+"pos": "WR",
+"points": 90.71,
+"sheetValue": -2.717
+},
+{
+"name": "Dyami Brown",
+"pos": "WR",
+"points": 90.57,
+"sheetValue": -2.739
+},
+{
+"name": "Alec Pierce",
+"pos": "WR",
+"points": 90.26,
+"sheetValue": -2.786
+},
+{
+"name": "Quentin Johnston",
+"pos": "WR",
+"points": 87.07,
+"sheetValue": -3.273
+},
+{
+"name": "Darius Slayton",
+"pos": "WR",
+"points": 86.51,
+"sheetValue": -3.359
+},
+{
+"name": "Josh Reynolds",
+"pos": "WR",
+"points": 86.22,
+"sheetValue": -3.403
+},
+{
+"name": "Tutu Atwell",
+"pos": "WR",
+"points": 84.95,
+"sheetValue": -3.597
+},
+{
+"name": "DeAndre Hopkins",
+"pos": "WR",
+"points": 84.8,
+"sheetValue": -3.62
+},
+{
+"name": "Jalen Coker",
+"pos": "WR",
+"points": 84.04,
+"sheetValue": -3.736
+},
+{
+"name": "Tory Horton",
+"pos": "WR",
+"points": 80.76,
+"sheetValue": -4.236
+},
+{
+"name": "Nick Westbrook-Ikhine",
+"pos": "WR",
+"points": 80.62,
+"sheetValue": -4.258
+},
+{
+"name": "Amari Cooper",
+"pos": "WR",
+"points": 80.61,
+"sheetValue": -4.259
+},
+{
+"name": "Kyle Williams",
+"pos": "WR",
+"points": 79.99,
+"sheetValue": -4.354
+},
+{
+"name": "Troy Franklin",
+"pos": "WR",
+"points": 79.78,
+"sheetValue": -4.386
+},
+{
+"name": "Jalen Tolbert",
+"pos": "WR",
+"points": 78.05,
+"sheetValue": -4.65
+},
+{
+"name": "Andrei Iosivas",
+"pos": "WR",
+"points": 75.78,
+"sheetValue": -4.997
+},
+{
+"name": "Noah Brown",
+"pos": "WR",
+"points": 73.49,
+"sheetValue": -5.346
+},
+{
+"name": "Pat Bryant",
+"pos": "WR",
+"points": 72.9,
+"sheetValue": -5.436
+},
+{
+"name": "Jordan Whittington",
+"pos": "WR",
+"points": 72.4,
+"sheetValue": -5.513
+},
+{
+"name": "Jalen Nailor",
+"pos": "WR",
+"points": 71.22,
+"sheetValue": -5.693
+},
+{
+"name": "Tre Tucker",
+"pos": "WR",
+"points": 69.83,
+"sheetValue": -5.905
+},
+{
+"name": "Roman Wilson",
+"pos": "WR",
+"points": 68.72,
+"sheetValue": -6.074
+},
+{
+"name": "Greg Dortch",
+"pos": "WR",
+"points": 67.42,
+"sheetValue": -6.273
+},
+{
+"name": "Kayshon Boutte",
+"pos": "WR",
+"points": 66.37,
+"sheetValue": -6.433
+},
+{
+"name": "Adonai Mitchell",
+"pos": "WR",
+"points": 65.39,
+"sheetValue": -6.583
+},
+{
+"name": "Dontayvion Wicks",
+"pos": "WR",
+"points": 64.92,
+"sheetValue": -6.655
+},
+{
+"name": "Elic Ayomanor",
+"pos": "WR",
+"points": 64.42,
+"sheetValue": -6.731
+},
+{
+"name": "Brandin Cooks",
+"pos": "WR",
+"points": 63.91,
+"sheetValue": -6.809
+},
+{
+"name": "Allen Lazard",
+"pos": "WR",
+"points": 62.23,
+"sheetValue": -7.065
+},
+{
+"name": "Jamari Thrash",
+"pos": "WR",
+"points": 61.88,
+"sheetValue": -7.119
+},
+{
+"name": "Marquez Valdes-Scantling",
+"pos": "WR",
+"points": 59.2,
+"sheetValue": -7.528
+},
+{
+"name": "Dont'e Thornton Jr.",
+"pos": "WR",
+"points": 59.19,
+"sheetValue": -7.529
+},
+{
+"name": "Curtis Samuel",
+"pos": "WR",
+"points": 59.08,
+"sheetValue": -7.546
+},
+{
+"name": "KaVontae Turpin",
+"pos": "WR",
+"points": 55.78,
+"sheetValue": -8.05
+},
+{
+"name": "Devaughn Vele",
+"pos": "WR",
+"points": 54.99,
+"sheetValue": -8.171
+},
+{
+"name": "Malik Washington",
+"pos": "WR",
+"points": 54.12,
+"sheetValue": -8.303
+},
+{
+"name": "Van Jefferson",
+"pos": "WR",
+"points": 53.74,
+"sheetValue": -8.361
+},
+{
+"name": "Christian Watson",
+"pos": "WR",
+"points": 52.05,
+"sheetValue": -8.619
+},
+{
+"name": "Parker Washington",
+"pos": "WR",
+"points": 48.77,
+"sheetValue": -9.12
+},
+{
+"name": "JuJu Smith-Schuster",
+"pos": "WR",
+"points": 48.73,
+"sheetValue": -9.126
+},
+{
+"name": "Demarcus Robinson",
+"pos": "WR",
+"points": 47.33,
+"sheetValue": -9.34
+},
+{
+"name": "Jack Bech",
+"pos": "WR",
+"points": 47.25,
+"sheetValue": -9.352
+},
+{
+"name": "Jalen McMillan",
+"pos": "WR",
+"points": 46.33,
+"sheetValue": -9.493
+},
+{
+"name": "Jaylin Noel",
+"pos": "WR",
+"points": 45.43,
+"sheetValue": -9.63
+},
+{
+"name": "Tim Patrick",
+"pos": "WR",
+"points": 45.01,
+"sheetValue": -9.694
+},
+{
+"name": "Chimere Dike",
+"pos": "WR",
+"points": 44.78,
+"sheetValue": -9.729
+},
+{
+"name": "Jermaine Burton",
+"pos": "WR",
+"points": 40.5,
+"sheetValue": -10.383
+},
+{
+"name": "Isaiah Bond",
+"pos": "WR",
+"points": 39.02,
+"sheetValue": -10.609
+},
+{
+"name": "Tai Felton",
+"pos": "WR",
+"points": 38.46,
+"sheetValue": -10.694
+},
+{
+"name": "Jake Bobo",
+"pos": "WR",
+"points": 37.25,
+"sheetValue": -10.879
+},
+{
+"name": "Zay Jones",
+"pos": "WR",
+"points": 34.12,
+"sheetValue": -11.357
+},
+{
+"name": "A.T. Perry",
+"pos": "WR",
+"points": 33.85,
+"sheetValue": -11.398
+},
+{
+"name": "Jahan Dotson",
+"pos": "WR",
+"points": 33.7,
+"sheetValue": -11.421
+},
+{
+"name": "Kalif Raymond",
+"pos": "WR",
+"points": 32.17,
+"sheetValue": -11.654
+},
+{
+"name": "Isaac TeSlaa",
+"pos": "WR",
+"points": 31.71,
+"sheetValue": -11.724
+},
+{
+"name": "Elijah Moore",
+"pos": "WR",
+"points": 30.54,
+"sheetValue": -11.903
+},
+{
+"name": "Xavier Hutchinson",
+"pos": "WR",
+"points": 30.29,
+"sheetValue": -11.941
+},
+{
+"name": "KhaDarel Hodge",
+"pos": "WR",
+"points": 30.21,
+"sheetValue": -11.953
+},
+{
+"name": "Jalen Royals",
+"pos": "WR",
+"points": 29.52,
+"sheetValue": -12.059
+},
+{
+"name": "Dareke Young",
+"pos": "WR",
+"points": 29.32,
+"sheetValue": -12.089
+},
+{
+"name": "Skyy Moore",
+"pos": "WR",
+"points": 27.73,
+"sheetValue": -12.332
+},
+{
+"name": "Jalin Hyatt",
+"pos": "WR",
+"points": 26.9,
+"sheetValue": -12.459
+},
+{
+"name": "Arian Smith",
+"pos": "WR",
+"points": 26.33,
+"sheetValue": -12.546
+},
+{
+"name": "Luke McCaffrey",
+"pos": "WR",
+"points": 26.26,
+"sheetValue": -12.556
+},
+{
+"name": "Robert Woods",
+"pos": "WR",
+"points": 24,
+"sheetValue": -12.902
+},
+{
+"name": "Olamide Zaccheaus",
+"pos": "WR",
+"points": 23.68,
+"sheetValue": -12.95
+},
+{
+"name": "David Moore",
+"pos": "WR",
+"points": 21.86,
+"sheetValue": -13.228
+},
+{
+"name": "Savion Williams",
+"pos": "WR",
+"points": 21.28,
+"sheetValue": -13.317
+},
+{
+"name": "Mack Hollins",
+"pos": "WR",
+"points": 18.33,
+"sheetValue": -13.767
+},
+{
+"name": "Tylan Wallace",
+"pos": "WR",
+"points": 17.6,
+"sheetValue": -13.879
+},
+{
+"name": "Irvin Charles",
+"pos": "WR",
+"points": 17.25,
+"sheetValue": -13.932
+},
+{
+"name": "Casey Washington",
+"pos": "WR",
+"points": 17.12,
+"sheetValue": -13.952
+},
+{
+"name": "Jaylin Lane",
+"pos": "WR",
+"points": 16.16,
+"sheetValue": -14.098
+},
+{
+"name": "Ryan Flournoy",
+"pos": "WR",
+"points": 15.62,
+"sheetValue": -14.181
+},
+{
+"name": "Sterling Shepard",
+"pos": "WR",
+"points": 15.11,
+"sheetValue": -14.259
+},
+{
+"name": "KeAndre Lambert-Smith",
+"pos": "WR",
+"points": 14.62,
+"sheetValue": -14.333
+},
+{
+"name": "Jamal Agnew",
+"pos": "WR",
+"points": 14.33,
+"sheetValue": -14.378
+},
+{
+"name": "Cedrick Wilson Jr.",
+"pos": "WR",
+"points": 14.21,
+"sheetValue": -14.396
+},
+{
+"name": "Bo Melton",
+"pos": "WR",
+"points": 14.08,
+"sheetValue": -14.416
+},
+{
+"name": "Tim Jones",
+"pos": "WR",
+"points": 13.14,
+"sheetValue": -14.559
+},
+{
+"name": "Devontez Walker",
+"pos": "WR",
+"points": 12.91,
+"sheetValue": -14.595
+},
+{
+"name": "Malik Heath",
+"pos": "WR",
+"points": 12.4,
+"sheetValue": -14.672
+},
+{
+"name": "Xavier Restrepo",
+"pos": "WR",
+"points": 12.2,
+"sheetValue": -14.703
+},
+{
+"name": "Cody White",
+"pos": "WR",
+"points": 11.92,
+"sheetValue": -14.746
+},
+{
+"name": "John Metchie III",
+"pos": "WR",
+"points": 11.84,
+"sheetValue": -14.758
+},
+{
+"name": "Jordan Watkins",
+"pos": "WR",
+"points": 8.77,
+"sheetValue": -15.227
+},
+{
+"name": "Derius Davis",
+"pos": "WR",
+"points": 8.66,
+"sheetValue": -15.243
+},
+{
+"name": "Xavier Gipson",
+"pos": "WR",
+"points": 8.64,
+"sheetValue": -15.246
+},
+{
+"name": "Ben Skowronek",
+"pos": "WR",
+"points": 8.29,
+"sheetValue": -15.3
+},
+{
+"name": "Tez Johnson",
+"pos": "WR",
+"points": 8.13,
+"sheetValue": -15.324
+},
+{
+"name": "Tyquan Thornton",
+"pos": "WR",
+"points": 8.09,
+"sheetValue": -15.33
+},
+{
+"name": "Xavier Weaver",
+"pos": "WR",
+"points": 7.53,
+"sheetValue": -15.416
+},
+{
+"name": "Justin Watson",
+"pos": "WR",
+"points": 7.36,
+"sheetValue": -15.442
+},
+{
+"name": "Scotty Miller",
+"pos": "WR",
+"points": 7.26,
+"sheetValue": -15.457
+},
+{
+"name": "Charlie Jones",
+"pos": "WR",
+"points": 7.04,
+"sheetValue": -15.491
+},
+{
+"name": "Austin Trammell",
+"pos": "WR",
+"points": 6.91,
+"sheetValue": -15.511
+},
+{
+"name": "Gage Larvadain",
+"pos": "WR",
+"points": 6.89,
+"sheetValue": -15.514
+},
+{
+"name": "Bryce Oliver",
+"pos": "WR",
+"points": 6.72,
+"sheetValue": -15.54
+},
+{
+"name": "Lil'Jordan Humphrey",
+"pos": "WR",
+"points": 6.4,
+"sheetValue": -15.588
+},
+{
+"name": "Dee Eskridge",
+"pos": "WR",
+"points": 6.14,
+"sheetValue": -15.628
+},
+{
+"name": "Brycen Tremayne",
+"pos": "WR",
+"points": 6.13,
+"sheetValue": -15.63
+},
+{
+"name": "Trent Sherfield Sr.",
+"pos": "WR",
+"points": 5.58,
+"sheetValue": -15.714
+},
+{
+"name": "DeAndre Carter",
+"pos": "WR",
+"points": 5.18,
+"sheetValue": -15.775
+},
+{
+"name": "Nick Nash",
+"pos": "WR",
+"points": 5,
+"sheetValue": -15.802
+},
+{
+"name": "Mitchell Tinsley",
+"pos": "WR",
+"points": 4.73,
+"sheetValue": -15.843
+},
+{
+"name": "Konata Mumpfield",
+"pos": "WR",
+"points": 4.22,
+"sheetValue": -15.921
+},
+{
+"name": "Trishton Jackson",
+"pos": "WR",
+"points": 4.08,
+"sheetValue": -15.943
+},
+{
+"name": "Anthony Gould",
+"pos": "WR",
+"points": 4.03,
+"sheetValue": -15.95
+},
+{
+"name": "Ashton Dulin",
+"pos": "WR",
+"points": 3.57,
+"sheetValue": -16.02
+},
+{
+"name": "Beaux Collins",
+"pos": "WR",
+"points": 3.36,
+"sheetValue": -16.052
+},
+{
+"name": "Tyrell Shavers",
+"pos": "WR",
+"points": 3.35,
+"sheetValue": -16.054
+},
+{
+"name": "Mason Tipton",
+"pos": "WR",
+"points": 3.32,
+"sheetValue": -16.059
+},
+{
+"name": "Efton Chism III",
+"pos": "WR",
+"points": 3.28,
+"sheetValue": -16.065
+},
+{
+"name": "David Bell",
+"pos": "WR",
+"points": 3.1,
+"sheetValue": -16.092
+},
+{
+"name": "Jimmy Horn Jr.",
+"pos": "WR",
+"points": 2.55,
+"sheetValue": -16.176
+},
+{
+"name": "Jonathan Mingo",
+"pos": "WR",
+"points": 2.4,
+"sheetValue": -16.199
+},
+{
+"name": "Xavier Smith",
+"pos": "WR",
+"points": 2.16,
+"sheetValue": -16.236
+},
+{
+"name": "Ryan Miller",
+"pos": "WR",
+"points": 1.96,
+"sheetValue": -16.266
+},
+{
+"name": "Jason Brownlee",
+"pos": "WR",
+"points": 1.9,
+"sheetValue": -16.275
+},
+{
+"name": "Braxton Berrios",
+"pos": "WR",
+"points": 1.8,
+"sheetValue": -16.291
+},
+{
+"name": "Tank Dell",
+"pos": "WR",
+"points": 1.7,
+"sheetValue": -16.306
+},
+{
+"name": "LaJohntay Wester",
+"pos": "WR",
+"points": 1.7,
+"sheetValue": -16.306
+},
+{
+"name": "Nikko Remigio",
+"pos": "WR",
+"points": 0.9,
+"sheetValue": -16.428
+},
+{
+"name": "Jacob Cowing",
+"pos": "WR",
+"points": 0.85,
+"sheetValue": -16.436
+},
+{
+"name": "Gunner Olszewski",
+"pos": "WR",
+"points": 0,
+"sheetValue": -16.565
+},
+{
+"name": "Javon Baker",
+"pos": "WR",
+"points": 0,
+"sheetValue": -16.565
+},
+{
+"name": "Kameron Johnson",
+"pos": "WR",
+"points": 0,
+"sheetValue": -16.565
+},
+{
+"name": "Trent Taylor",
+"pos": "WR",
+"points": 0,
+"sheetValue": -16.565
+},
+{
+"name": "Juwann Winfree",
+"pos": "WR",
+"points": 0,
+"sheetValue": -16.565
+},
+{
+"name": "Rondale Moore",
+"pos": "WR",
+"points": 0,
+"sheetValue": -16.565
+},
+{
+"name": "D.J. Montgomery",
+"pos": "WR",
+"points": 0,
+"sheetValue": -16.565
+},
+{
+"name": "David Sills",
+"pos": "WR",
+"points": 0,
+"sheetValue": -16.565
+},
+{
+"name": "Ihmir Smith-Marsette",
+"pos": "WR",
+"points": -1.5,
+"sheetValue": -16.794
+},
+{
+"name": "Brock Bowers",
+"pos": "TE",
+"points": 199.29,
+"sheetValue": 34.035
+},
+{
+"name": "Trey McBride",
+"pos": "TE",
+"points": 191.23,
+"sheetValue": 30.99
+},
+{
+"name": "George Kittle",
+"pos": "TE",
+"points": 186.27,
+"sheetValue": 29.117
+},
+{
+"name": "Sam LaPorta",
+"pos": "TE",
+"points": 150.73,
+"sheetValue": 15.691
+},
+{
+"name": "Travis Kelce",
+"pos": "TE",
+"points": 147.56,
+"sheetValue": 14.494
+},
+{
+"name": "Mark Andrews",
+"pos": "TE",
+"points": 143.88,
+"sheetValue": 13.104
+},
+{
+"name": "T.J. Hockenson",
+"pos": "TE",
+"points": 141.23,
+"sheetValue": 12.103
+},
+{
+"name": "David Njoku",
+"pos": "TE",
+"points": 139.93,
+"sheetValue": 11.612
+},
+{
+"name": "Tyler Warren",
+"pos": "TE",
+"points": 125.82,
+"sheetValue": 6.282
+},
+{
+"name": "Evan Engram",
+"pos": "TE",
+"points": 121.39,
+"sheetValue": 4.608
+},
+{
+"name": "Tucker Kraft",
+"pos": "TE",
+"points": 120.05,
+"sheetValue": 4.102
+},
+{
+"name": "Jake Ferguson",
+"pos": "TE",
+"points": 116.53,
+"sheetValue": 2.772
+},
+{
+"name": "Kyle Pitts Sr.",
+"pos": "TE",
+"points": 116.35,
+"sheetValue": 2.745
+},
+{
+"name": "Zach Ertz",
+"pos": "TE",
+"points": 115.53,
+"sheetValue": 2.62
+},
+{
+"name": "Dallas Goedert",
+"pos": "TE",
+"points": 114.79,
+"sheetValue": 2.507
+},
+{
+"name": "Dalton Kincaid",
+"pos": "TE",
+"points": 112.11,
+"sheetValue": 2.098
+},
+{
+"name": "Hunter Henry",
+"pos": "TE",
+"points": 107.66,
+"sheetValue": 1.418
+},
+{
+"name": "Cade Otton",
+"pos": "TE",
+"points": 104.75,
+"sheetValue": 0.974
+},
+{
+"name": "Colston Loveland",
+"pos": "TE",
+"points": 104.34,
+"sheetValue": 0.911
+},
+{
+"name": "Brenton Strange",
+"pos": "TE",
+"points": 101.44,
+"sheetValue": 0.469
+},
+{
+"name": "Jonnu Smith",
+"pos": "TE",
+"points": 99.98,
+"sheetValue": 0.246
+},
+{
+"name": "Chig Okonkwo",
+"pos": "TE",
+"points": 98.94,
+"sheetValue": 0.087
+},
+{
+"name": "Darren Waller",
+"pos": "TE",
+"points": 98.37,
+"sheetValue": 0
+},
+{
+"name": "Isaiah Likely",
+"pos": "TE",
+"points": 97.05,
+"sheetValue": -0.202
+},
+{
+"name": "Mike Gesicki",
+"pos": "TE",
+"points": 95.37,
+"sheetValue": -0.458
+},
+{
+"name": "Pat Freiermuth",
+"pos": "TE",
+"points": 93.08,
+"sheetValue": -0.808
+},
+{
+"name": "Dalton Schultz",
+"pos": "TE",
+"points": 92.99,
+"sheetValue": -0.821
+},
+{
+"name": "Juwan Johnson",
+"pos": "TE",
+"points": 91.06,
+"sheetValue": -1.116
+},
+{
+"name": "Theo Johnson",
+"pos": "TE",
+"points": 88.59,
+"sheetValue": -1.493
+},
+{
+"name": "Robbie Ouzts",
+"pos": "TE",
+"points": 88,
+"sheetValue": -1.583
+},
+{
+"name": "Mason Taylor",
+"pos": "TE",
+"points": 87.88,
+"sheetValue": -1.601
+},
+{
+"name": "Tyler Higbee",
+"pos": "TE",
+"points": 87.19,
+"sheetValue": -1.707
+},
+{
+"name": "Elijah Arroyo",
+"pos": "TE",
+"points": 78.43,
+"sheetValue": -3.044
+},
+{
+"name": "Ja'Tavion Sanders",
+"pos": "TE",
+"points": 75.84,
+"sheetValue": -3.439
+},
+{
+"name": "Will Dissly",
+"pos": "TE",
+"points": 71.92,
+"sheetValue": -4.038
+},
+{
+"name": "Noah Fant",
+"pos": "TE",
+"points": 70.89,
+"sheetValue": -4.195
+},
+{
+"name": "Tyler Conklin",
+"pos": "TE",
+"points": 63.24,
+"sheetValue": -5.363
+},
+{
+"name": "Noah Gray",
+"pos": "TE",
+"points": 61.99,
+"sheetValue": -5.554
+},
+{
+"name": "AJ Barner",
+"pos": "TE",
+"points": 61.13,
+"sheetValue": -5.685
+},
+{
+"name": "Cole Kmet",
+"pos": "TE",
+"points": 57.18,
+"sheetValue": -6.288
+},
+{
+"name": "Austin Hooper",
+"pos": "TE",
+"points": 53.14,
+"sheetValue": -6.905
+},
+{
+"name": "Michael Mayer",
+"pos": "TE",
+"points": 51.12,
+"sheetValue": -7.213
+},
+{
+"name": "Harold Fannin Jr.",
+"pos": "TE",
+"points": 50.07,
+"sheetValue": -7.374
+},
+{
+"name": "Dawson Knox",
+"pos": "TE",
+"points": 46.23,
+"sheetValue": -7.96
+},
+{
+"name": "Terrance Ferguson",
+"pos": "TE",
+"points": 45.65,
+"sheetValue": -8.048
+},
+{
+"name": "Foster Moreau",
+"pos": "TE",
+"points": 40.41,
+"sheetValue": -8.848
+},
+{
+"name": "Gunnar Helm",
+"pos": "TE",
+"points": 40.08,
+"sheetValue": -8.899
+},
+{
+"name": "Josh Oliver",
+"pos": "TE",
+"points": 39.65,
+"sheetValue": -8.964
+},
+{
+"name": "Oronde Gadsden II",
+"pos": "TE",
+"points": 38.47,
+"sheetValue": -9.144
+},
+{
+"name": "Tommy Tremble",
+"pos": "TE",
+"points": 37.54,
+"sheetValue": -9.286
+},
+{
+"name": "Luke Musgrave",
+"pos": "TE",
+"points": 36.58,
+"sheetValue": -9.433
+},
+{
+"name": "Brock Wright",
+"pos": "TE",
+"points": 34.18,
+"sheetValue": -9.799
+},
+{
+"name": "Ben Sinnott",
+"pos": "TE",
+"points": 33.4,
+"sheetValue": -9.918
+},
+{
+"name": "Cade Stover",
+"pos": "TE",
+"points": 31.71,
+"sheetValue": -10.176
+},
+{
+"name": "Jeremy Ruckert",
+"pos": "TE",
+"points": 30.19,
+"sheetValue": -10.409
+},
+{
+"name": "Adam Trautman",
+"pos": "TE",
+"points": 29.88,
+"sheetValue": -10.456
+},
+{
+"name": "Luke Schoonmaker",
+"pos": "TE",
+"points": 27.9,
+"sheetValue": -10.758
+},
+{
+"name": "Julian Hill",
+"pos": "TE",
+"points": 27,
+"sheetValue": -10.896
+},
+{
+"name": "Charlie Woerner",
+"pos": "TE",
+"points": 26.27,
+"sheetValue": -11.007
+},
+{
+"name": "Grant Calcaterra",
+"pos": "TE",
+"points": 25.05,
+"sheetValue": -11.193
+},
+{
+"name": "Daniel Bellinger",
+"pos": "TE",
+"points": 24.24,
+"sheetValue": -11.317
+},
+{
+"name": "Payne Durham",
+"pos": "TE",
+"points": 23.69,
+"sheetValue": -11.401
+},
+{
+"name": "Elijah Higgins",
+"pos": "TE",
+"points": 23.36,
+"sheetValue": -11.451
+},
+{
+"name": "Johnny Mundt",
+"pos": "TE",
+"points": 23.02,
+"sheetValue": -11.503
+},
+{
+"name": "Darnell Washington",
+"pos": "TE",
+"points": 22.67,
+"sheetValue": -11.557
+},
+{
+"name": "Colby Parkinson",
+"pos": "TE",
+"points": 21.39,
+"sheetValue": -11.752
+},
+{
+"name": "Connor Heyward",
+"pos": "TE",
+"points": 20.99,
+"sheetValue": -11.813
+},
+{
+"name": "Jake Briningstool",
+"pos": "TE",
+"points": 20.4,
+"sheetValue": -11.903
+},
+{
+"name": "Drew Sample",
+"pos": "TE",
+"points": 18.29,
+"sheetValue": -12.225
+},
+{
+"name": "Drew Ogletree",
+"pos": "TE",
+"points": 18.28,
+"sheetValue": -12.227
+},
+{
+"name": "Lucas Krull",
+"pos": "TE",
+"points": 16.89,
+"sheetValue": -12.439
+},
+{
+"name": "Teagan Quitoriano",
+"pos": "TE",
+"points": 16.75,
+"sheetValue": -12.46
+},
+{
+"name": "Blake Whiteheart",
+"pos": "TE",
+"points": 16.06,
+"sheetValue": -12.566
+},
+{
+"name": "Nate Adkins",
+"pos": "TE",
+"points": 15.58,
+"sheetValue": -12.639
+},
+{
+"name": "Tanner Conner",
+"pos": "TE",
+"points": 15.41,
+"sheetValue": -12.665
+},
+{
+"name": "John Bates",
+"pos": "TE",
+"points": 14.33,
+"sheetValue": -12.83
+},
+{
+"name": "Brevyn Spann-Ford",
+"pos": "TE",
+"points": 14.21,
+"sheetValue": -12.848
+},
+{
+"name": "Hunter Long",
+"pos": "TE",
+"points": 14.19,
+"sheetValue": -12.851
+},
+{
+"name": "Devin Culp",
+"pos": "TE",
+"points": 13.57,
+"sheetValue": -12.946
+},
+{
+"name": "Brenden Bates",
+"pos": "TE",
+"points": 13.54,
+"sheetValue": -12.95
+},
+{
+"name": "Charlie Kolar",
+"pos": "TE",
+"points": 12.42,
+"sheetValue": -13.121
+},
+{
+"name": "Eric Saubert",
+"pos": "TE",
+"points": 12.42,
+"sheetValue": -13.121
+},
+{
+"name": "Gavin Bartholomew",
+"pos": "TE",
+"points": 12.25,
+"sheetValue": -13.147
+},
+{
+"name": "Kenny Yeboah",
+"pos": "TE",
+"points": 12.04,
+"sheetValue": -13.179
+},
+{
+"name": "Tip Reiman",
+"pos": "TE",
+"points": 11.73,
+"sheetValue": -13.227
+},
+{
+"name": "Ian Thomas",
+"pos": "TE",
+"points": 11.54,
+"sheetValue": -13.256
+},
+{
+"name": "Mitchell Evans",
+"pos": "TE",
+"points": 11.53,
+"sheetValue": -13.257
+},
+{
+"name": "Luke Farrell",
+"pos": "TE",
+"points": 11.36,
+"sheetValue": -13.283
+},
+{
+"name": "Travis Vokolek",
+"pos": "TE",
+"points": 11.3,
+"sheetValue": -13.292
+},
+{
+"name": "Stone Smartt",
+"pos": "TE",
+"points": 11.22,
+"sheetValue": -13.305
+},
+{
+"name": "Moliki Matavao",
+"pos": "TE",
+"points": 11.15,
+"sheetValue": -13.315
+},
+{
+"name": "Thomas Fidone II",
+"pos": "TE",
+"points": 10.95,
+"sheetValue": -13.346
+},
+{
+"name": "Cam Grandy",
+"pos": "TE",
+"points": 10.93,
+"sheetValue": -13.349
+},
+{
+"name": "Jackson Hawes",
+"pos": "TE",
+"points": 10.77,
+"sheetValue": -13.373
+},
+{
+"name": "Ben Sims",
+"pos": "TE",
+"points": 10.6,
+"sheetValue": -13.399
+},
+{
+"name": "Jared Wiley",
+"pos": "TE",
+"points": 10.41,
+"sheetValue": -13.428
+},
+{
+"name": "Chris Manhertz",
+"pos": "TE",
+"points": 9.25,
+"sheetValue": -13.605
+},
+{
+"name": "Durham Smythe",
+"pos": "TE",
+"points": 9.09,
+"sheetValue": -13.63
+},
+{
+"name": "Jack Stoll",
+"pos": "TE",
+"points": 8.42,
+"sheetValue": -13.732
+},
+{
+"name": "Will Mallory",
+"pos": "TE",
+"points": 7.6,
+"sheetValue": -13.857
+},
+{
+"name": "David Martin-Robinson",
+"pos": "TE",
+"points": 7.37,
+"sheetValue": -13.892
+},
+{
+"name": "Irv Smith Jr.",
+"pos": "TE",
+"points": 7.18,
+"sheetValue": -13.921
+},
+{
+"name": "Davis Allen",
+"pos": "TE",
+"points": 7.08,
+"sheetValue": -13.937
+},
+{
+"name": "Tucker Fisk",
+"pos": "TE",
+"points": 6.03,
+"sheetValue": -14.097
+},
+{
+"name": "Kylen Granson",
+"pos": "TE",
+"points": 6.02,
+"sheetValue": -14.098
+},
+{
+"name": "Mo Alie-Cox",
+"pos": "TE",
+"points": 5.71,
+"sheetValue": -14.146
+},
+{
+"name": "Tanner Hudson",
+"pos": "TE",
+"points": 5.37,
+"sheetValue": -14.198
+},
+{
+"name": "Ko Kieft",
+"pos": "TE",
+"points": 5.35,
+"sheetValue": -14.201
+},
+{
+"name": "Erick All Jr.",
+"pos": "TE",
+"points": 4.49,
+"sheetValue": -14.332
+},
+{
+"name": "Taysom Hill",
+"pos": "TE",
+"points": 3.35,
+"sheetValue": -14.506
+},
+{
+"name": "James Mitchell",
+"pos": "TE",
+"points": 3.34,
+"sheetValue": -14.508
+},
+{
+"name": "Jack Westover",
+"pos": "TE",
+"points": 3.32,
+"sheetValue": -14.511
+},
+{
+"name": "Feleipe Franks",
+"pos": "TE",
+"points": 3.27,
+"sheetValue": -14.518
+},
+{
+"name": "Quintin Morris",
+"pos": "TE",
+"points": 1.5,
+"sheetValue": -14.788
+},
+{
+"name": "Nick Vannett",
+"pos": "TE",
+"points": 1.5,
+"sheetValue": -14.788
+},
+{
+"name": "Greg Dulcich",
+"pos": "TE",
+"points": 1.45,
+"sheetValue": -14.796
+},
+{
+"name": "Harrison Bryant",
+"pos": "TE",
+"points": 0.8,
+"sheetValue": -14.895
+},
+{
+"name": "Tyree Jackson",
+"pos": "TE",
+"points": 0,
+"sheetValue": -15.017
+},
+{
+"name": "Donald Parham Jr.",
+"pos": "TE",
+"points": 0,
+"sheetValue": -15.017
+}
+]
+}

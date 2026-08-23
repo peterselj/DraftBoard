@@ -52,7 +52,7 @@ export function parseQuickEntry(text, { players = [], teams = [], myTeamId = nul
   else if (teamAmbiguous) hint = `"${teamQuery}" matches more than one team`;
 
   return {
-    playerQuery, price, teamQuery,
+    playerQuery, price, teamQuery, hasPrice,
     playerMatches, player, team, teamAmbiguous,
     ready: Boolean(player && priceValid && team && !teamAmbiguous),
     hint,

@@ -40,6 +40,9 @@ Fixed in the conversion from the Claude artifact (see git history):
       `docs/VALUE_MODEL.md` for the open choices.
 - [ ] **Yahoo market values** without a manual paste — needs a registered OAuth
       app. See `docs/DATA.md`.
+- [ ] **Tune the starter share.** 0.88 is the workbook's figure, now adjustable
+      in Settings. Worth checking against what your leagues actually spend on
+      starters vs. bench, since it decides how much money concentrates at the top.
 - [ ] **Positional need in the team strip.** Not a full roster view — the
       drafting site already shows that. The useful version is "who still needs
       an RB and can afford one", which is what predicts the next bidding war.

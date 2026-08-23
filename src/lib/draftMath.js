@@ -26,6 +26,9 @@ export const DEFAULT_SETTINGS = {
   scoring: DEFAULT_SCORING,
   // Which site the auction runs on; its published values anchor the room.
   platform: "espn",
+  // Share of the biddable money that goes to starters rather than bench
+  // depth. 0.88 is the elboberto sheet's figure.
+  starterShare: 0.88,
 };
 
 export function defaultTeams(numTeams) {
@@ -80,6 +83,31 @@ export function teamSlotBreakdown(teamId, players, roster) {
   };
 }
 
+/** How many players at each position have actually been drafted, league-wide
+ *  — plain head counts, unlike the scarcity multiplier these sit next to,
+ *  which measures *value* against demand and says nothing about how many
+ *  bodies have actually come off the board.
+ *
+ *  A team's picks at a position overflow past its dedicated slots into FLEX
+ *  and then BENCH (see teamSlotBreakdown), so "5 WR taken" on a 3 WR / 1 FLEX
+ *  roster doesn't mean five teams filled their WR rooms — it can mean one
+ *  team took five, filling their 3 dedicated slots, their FLEX, and a bench
+ *  spot besides. Summing every team's overflow tells the two apart. */
+export function leagueFillCounts(players, teams, roster) {
+  const taken = {};
+  SCARCITY_POS.forEach((pos) => {
+    taken[pos] = players.filter((p) => p.drafted && p.pos === pos).length;
+  });
+  let flexFilled = 0;
+  let benchFilled = 0;
+  teams.forEach((t) => {
+    const b = teamSlotBreakdown(t.id, players, roster);
+    flexFilled += b.flexFilled;
+    benchFilled += b.benchFilled;
+  });
+  return { taken, flexFilled, benchFilled };
+}
+
 /** How much *value* each scarcity position holds in a pool — the supply half
  *  of the baseline, measured in dollars above the $1 floor rather than in
  *  bodies. Snapshotted when a draft starts so the baseline reflects the pool
@@ -120,6 +148,14 @@ export function computeBaselineFromSupply(settings, supply) {
     const demand = dedicatedDemand[pos] + flexShare;
     ratio[pos] = at(pos) > 0 ? demand / at(pos) : 99;
   });
+
+  // FLEX as a whole: every RB/WR/TE slot, dedicated and flex alike, against the
+  // combined skill-position pool. Informational — it says whether startable
+  // skill talent is drying up generally, which a single position's number
+  // can't. Never applied to an individual player's price.
+  const flexDemand = FLEX_ELIGIBLE.reduce((s, pos) => s + dedicatedDemand[pos], 0) + totalFlexDemand;
+  const flexSupply = FLEX_ELIGIBLE.reduce((s, pos) => s + at(pos), 0);
+  ratio.FLEX = flexSupply > 0 ? flexDemand / flexSupply : 99;
   return ratio;
 }
 
@@ -163,7 +199,26 @@ export function computeLive(
   const undraftedValueSum = players
     .filter((p) => !p.drafted)
     .reduce((s, p) => s + Math.max(0, (baseValueOf(p) ?? 1) - 1), 0);
-  const budgetInflationMult = undraftedValueSum > 0 ? competitiveDollars / undraftedValueSum : 1;
+
+  // Measured against where the draft started, not against a raw dollars-per-
+  // point ratio. The two sides count the $1 floor slightly differently — the
+  // money side reserves a dollar for every roster slot, while the value model
+  // only ends up pricing the slots it has real players for — so the raw ratio
+  // starts near 0.996 rather than 1.000. That 0.4% is invisible in the gauge
+  // but enough to round a $50 player down to $49 and show a spurious "-1"
+  // before anyone has bid. Normalising removes the offset by construction and
+  // makes the number mean what the label says: price level now vs. at the start.
+  const slotsPerTeam = Object.values(roster).reduce((s, n) => s + (n || 0), 0);
+  const moneyAtStart = Math.max(1, teams.length * budget - teams.length * slotsPerTeam);
+  const valueAtStart = players.reduce((s, p) => s + Math.max(0, (baseValueOf(p) ?? 1) - 1), 0);
+  const parRate = valueAtStart > 0 ? moneyAtStart / valueAtStart : 1;
+
+  const liveRate = undraftedValueSum > 0 ? competitiveDollars / undraftedValueSum : parRate;
+  const budgetInflationMult = parRate > 0 ? liveRate / parRate : 1;
+
+  // The value still on the board, expressed in room dollars rather than model
+  // points, so the gauge can show two comparable figures.
+  const valueLeftAtPar = undraftedValueSum * parRate;
 
   // Supply is measured in *value still on the board*, not bodies. A head count
   // can't tell the difference between losing the top 4 RBs and losing 4
@@ -190,8 +245,17 @@ export function computeLive(
     scarcityMult[pos] = Math.min(3, Math.max(0.4, raw));
   });
 
+  // Combined skill-position reading (see computeBaselineFromSupply).
+  const flexSupplyValue = FLEX_ELIGIBLE.reduce((s, pos) => s + liveSupply[pos], 0);
+  const flexDemand = FLEX_ELIGIBLE.reduce((s, pos) => s + openDedByPos[pos], 0) + openFlexTotal;
+  const flexLiveRatio = flexSupplyValue > 0 ? flexDemand / flexSupplyValue : 99;
+  const flexBase = baselineRatio.FLEX || 1;
+  scarcityMult.FLEX = Math.min(3, Math.max(0.4, flexBase > 0 ? flexLiveRatio / flexBase : 1));
+  liveSupply.FLEX = flexSupplyValue;
+
   return {
     teamStats, budgetInflationMult, scarcityMult, competitiveDollars, undraftedValueSum,
+    valueLeftAtPar,
     // Dollars of value still on the board at each position — the supply figure
     // the scarcity multiplier is derived from, surfaced so it can be shown.
     valueLeftByPos: liveSupply,

@@ -110,6 +110,17 @@ test("an injury flag between name and numbers doesn't shift the value", () => {
   assert.equal(chase.value, 65.5);
 });
 
+test("undrafted Yahoo rows are skipped, not read as rank-priced", () => {
+  // Real deep rows look like "294  -  -  1": rank, no % drafted, no Avg $, and
+  // a $1 projection. Importing 294 as a dollar value would be catastrophic.
+  const { rows } = parseImport(
+    YAHOO_PASTE + "\nJaylen Wright\nMia - RB\n294\n-\n-\n1\n"
+  );
+  assert.equal(rows.find((r) => r.name === "Jaylen Wright"), undefined);
+  assert.equal(rows.length, 3, "the three real rows still import");
+  assert.ok(rows.every((r) => r.value < 100), "no rank ever lands in the value column");
+});
+
 test("vertical rows land on the right players, suffixes and all", () => {
   const { rows } = parseImport(YAHOO_PASTE);
   const { players, matched, unmatched } = applyImport(pool, rows, "yahoo");
@@ -125,4 +136,48 @@ test("a full round trip from pasted text to updated pool", () => {
   assert.equal(matched, 2);
   assert.equal(players.find((p) => p.id === "b").projected, 61);
   assert.equal(players.find((p) => p.id === "d").projected, 2);
+});
+
+// FantasyPros' auction calculator copies out as several tables stitched
+// together, one per position, each with its own repeated "#  POS  Value"
+// header, and names carry the team (and sometimes an injury badge) right in
+// the cell: "Josh Allen, BUF", "Patrick Mahomes II, KCDTD".
+const FANTASYPROS_PASTE =
+  "#\tQB\tValue\n" +
+  "1.\tJosh Allen, BUF\t$31\n" +
+  "11.\tPatrick Mahomes II, KCDTD\t$6\n" +
+  "#\tDST\tValue\n" +
+  "1.\tHouston Texans\t$2\n" +
+  "#\tRB\tValue\n" +
+  "1.\tJahmyr Gibbs, DET\t$62\n" +
+  "7.\tJames Cook III, BUF\t$37\n" +
+  "85.\tAustin Ekeler,\t$0\n" +
+  "#\tWR\tValue\n" +
+  "32.\tMarvin Harrison Jr., ARI\t$13\n";
+
+test("FantasyPros' repeated per-position headers don't wreck column detection", () => {
+  const { rows, warnings } = parseImport(FANTASYPROS_PASTE);
+  assert.deepEqual(warnings, []);
+  assert.deepEqual(
+    rows.map((r) => [r.name, r.pos, r.value]),
+    [
+      ["Josh Allen", "QB", 31],
+      ["Patrick Mahomes II", "QB", 6],
+      ["Houston Texans", "DEF", 2],
+      ["Jahmyr Gibbs", "RB", 62],
+      ["James Cook III", "RB", 37],
+      ["Austin Ekeler", "RB", 0],
+      ["Marvin Harrison Jr.", "WR", 13],
+    ]
+  );
+});
+
+test("FantasyPros rows land on the right players despite the team in the name cell", () => {
+  const { rows } = parseImport(FANTASYPROS_PASTE);
+  const { players, matched, unmatched } = applyImport(pool, rows, "fantasypros");
+  assert.deepEqual(unmatched.map((r) => r.name), ["Josh Allen", "Patrick Mahomes II", "Jahmyr Gibbs", "Austin Ekeler"]);
+  assert.equal(matched, 3); // Houston Texans, James Cook III -> James Cook, Marvin Harrison Jr.
+  assert.equal(players.find((p) => p.id === "d").fantasypros, 2);
+  assert.equal(players.find((p) => p.id === "e").fantasypros, 37);
+  assert.equal(players.find((p) => p.id === "c").fantasypros, 13);
 });

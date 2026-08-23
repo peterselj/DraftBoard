@@ -32,8 +32,10 @@ test("an untouched board reads as neutral, not inflated", { skip }, () => {
   const teams = defaultTeams(settings.numTeams);
   const live = computeLive(players, teams, settings, computeBaseline(settings, players, baseValueOf), baseValueOf);
 
-  assert.ok(Math.abs(live.budgetInflationMult - 1) < 0.05,
-    `inflation should start near 1.00x, got ${live.budgetInflationMult.toFixed(2)}x`);
+  // Exactly 1.00x, not merely close: anything else rounds a $50 player to $49
+  // and shows a "-1" drift before a single bid has been made.
+  assert.ok(Math.abs(live.budgetInflationMult - 1) < 1e-9,
+    `inflation must start at exactly 1.00x, got ${live.budgetInflationMult.toFixed(6)}x`);
   for (const pos of ["QB", "RB", "WR", "TE"]) {
     assert.ok(Math.abs(live.scarcityMult[pos] - 1) < 0.01,
       `${pos} scarcity should start at 1.00x, got ${live.scarcityMult[pos].toFixed(2)}x`);
@@ -62,6 +64,22 @@ test("paying over the odds early makes the rest of the room cheaper", { skip }, 
     "money left the room faster than value did, so remaining players must get cheaper");
 });
 
+test("an untouched board shows no drift between model and live value", { skip }, () => {
+  // The visible symptom of a non-neutral start: model $50, live $49, "-1".
+  const players = dataset.players.map((p) => ({ ...p, drafted: false, paid: null, draftedBy: null }));
+  const { values } = computeModelValues(players, settings);
+  const baseValueOf = (p) => values.get(p.id) ?? p.projected ?? 1;
+  const teams = defaultTeams(settings.numTeams);
+  const live = computeLive(players, teams, settings, computeBaseline(settings, players, baseValueOf), baseValueOf);
+
+  const drifted = players.filter((p) => {
+    const model = baseValueOf(p);
+    return Math.round(adjustedValue(p, live, model)) !== Math.round(model);
+  });
+  assert.equal(drifted.length, 0,
+    `${drifted.length} players drift before any pick, e.g. ${drifted.slice(0, 3).map((p) => p.name).join(", ")}`);
+});
+
 test("live value tracks the multipliers", { skip }, () => {
   const player = { id: "x", pos: "WR", projected: 40, model: 40 };
   const hot = { budgetInflationMult: 1.25, scarcityMult: { WR: 1.2 } };
@@ -74,12 +92,15 @@ test("live value tracks the multipliers", { skip }, () => {
 
 test("the money in the model matches the money in the room", { skip }, () => {
   const { values } = computeModelValues(dataset.players, settings);
-  const slots = rosterSize(settings.roster);
-  const competitive = settings.numTeams * settings.budget - settings.numTeams * slots;
-  const total = [...values.values()]
+  const { numTeams, budget, roster } = settings;
+  // Only K and DEF slots are held back at $1; bench dollars are biddable and
+  // get spent on real players, per the elboberto method.
+  const pool = numTeams * budget - (roster.K + roster.DEF) * numTeams;
+  const pricedSlots = numTeams * (rosterSize(roster) - roster.K - roster.DEF);
+  const spend = [...values.values()]
     .sort((a, b) => b - a)
-    .slice(0, settings.numTeams * slots)
-    .reduce((s, v) => s + (v - 1), 0);
-  assert.ok(Math.abs(total - competitive) / competitive < 0.02,
-    `model allocates $${total.toFixed(0)} against $${competitive} of competitive money`);
+    .slice(0, pricedSlots)
+    .reduce((s, v) => s + v, 0);
+  assert.ok(Math.abs(spend - pool) / pool < 0.05,
+    `model allocates $${spend.toFixed(0)} against a $${pool} pool`);
 });

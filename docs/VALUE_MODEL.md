@@ -17,52 +17,97 @@ projected production for this specific league means:
 
 ## The pipeline
 
+Value comes in two tranches, priced at different rates. This is the part that
+matters most, and it's taken directly from the workbook:
+
 ```
-1. points      = projected stat line × league scoring        (scoring.js)
-2. starters    = teams × dedicated slots, plus FLEX by merit
-3. replacement = points of the best player at the position who doesn't start
-4. VORP        = max(0, points − replacement)
-5. dollars     = $1 + VORP × (competitive money / total VORP in the pool)
+points        = projected stat line x league scoring          (scoring.js)
+starters[pos] = teams x dedicated slots, plus FLEX by merit
+bench[pos]    = teams x bench slots, split in proportion to starters
+startBaseline = points of the LAST STARTER at the position
+benchBaseline = points of the LAST ROSTERED player at the position
+
+startVORP     = max(0, points - startBaseline)      "makes him startable"
+benchVORP     = max(0, points - benchBaseline)      "makes him rosterable"
+
+value = (benchVORP - startVORP) x benchRate + startVORP x starterRate
 ```
+
+The cheap tranche is what gets a player onto a roster at all; the dear tranche
+is what makes him worth starting. In a 12-team league the starter rate comes
+out around 2.5x the bench rate.
+
+**Why not a single baseline?** Because it funnels the whole budget into the ~84
+starters and prices everyone else at $1. Real rooms pay $8-12 for a competent
+bench back. The marginal starter — zero startVORP, plenty of benchVORP — should
+cost about $11, not $1, and a board that says $1 will have you passing on every
+mid-tier player in the draft.
+
+### The money
+
+```
+pool         = teams x budget - (K slots + DEF slots) x teams
+benchMoney   = pool x (1 - starterShare)          starterShare defaults to 0.88
+starterMoney = pool x starterShare - (bench-rate spend on starters' first tranche)
+```
+
+Only K and DEF hold back a dollar each; they're filler and get flat $1. Bench
+dollars are *biddable* and get spent on real players, which is why the pool is
+larger than a naive "reserve $1 per slot" figure.
+
+Starters pay the bench rate on their first tranche too, so that spend is
+deducted before working out what a starter-grade point costs. Without it the
+model would double-pay and overshoot the budget.
 
 ### FLEX allocation
 
-Flex slots aren't split by a fixed ratio. The next-best RB/WR/TE beyond each
-position's dedicated starters compete, and the highest-scoring ones take the
-slots — which is what actually happens in a draft. A deep WR class therefore
-absorbs more flex slots and pushes WR replacement level deeper, exactly as it
-should.
+Flex slots aren't split by a fixed ratio. The next-best RB/WR/TEs beyond each
+position's dedicated starters compete, and the highest scorers take the slots.
+On the 2025 workbook this reproduces its RB 27 / WR 33 split off 24 dedicated
+each, without that rule being written down anywhere.
 
-### Competitive money
+## Validated against the workbook
 
-```
-competitive money = teams × budget − teams × roster slots
-```
+`test/valueModel.elboberto.test.js` feeds the sheet's own projected points into
+`computeModelValues` and compares against the sheet's own dollar column:
 
-Every roster slot needs a dollar, so that money was never biddable. In a
-12-team, $200, 16-slot league: `12 × 200 − 12 × 16 = $2,208` of real money
-chasing VORP. The tests assert the model allocates that number to within 2%.
+| | |
+| --- | --- |
+| players compared | 144 priced above $1 |
+| mean absolute difference | **$0.002** |
+| worst single disagreement | **$0.01** (rounding) |
+| starter rate | 0.3777 vs sheet 0.3778 |
+| bench rate | 0.1527 vs sheet 0.1527 |
 
-### The draftable pool
+Two details were worth chasing to get there, and both are pinned by tests:
 
-Only the top `teams × roster slots` players by VORP absorb the money. Summing
-VORP over all ~600 players in the pool would dilute every real value toward
-zero, because hundreds of marginal players each carry a sliver of positive
-VORP that nobody will ever pay for.
+- **Baselines are the last starter, not the first non-starter.** Excel's
+  `LARGE(range, k)` is 1-based, so the last starter has exactly zero
+  starter-VORP.
+- **Fractional bench counts round up.** Bench slots divide unevenly across
+  positions (RB gets 23.14 of them), and rounding that up is what matches the
+  sheet — verified against all four positions, where truncating was a rank
+  short every time.
+
+Treat a failure in that test as "did we mean to diverge from the sheet?" rather
+than a flaky assertion.
 
 ## Choices worth revisiting
 
 | Choice | Current | Alternative |
 | --- | --- | --- |
-| Replacement level | First player past the starter cutoff | Average of a band around the cutoff (less jumpy) |
-| Bench slots | Reserve $1 each, don't create demand | Treat some bench as real demand, deepening replacement |
-| K / DEF | Priced off the source's pre-scored total | Re-score from components (the feeds don't expose enough) |
-| Pool cap | `teams × slots` | Include a bench buffer |
+| Starter share | 0.88 of the pool, adjustable in Settings | Derive it from observed spending in past drafts |
+| Bench allocation | Proportional to starter counts | By merit, the way FLEX slots are allocated |
+| K / DEF | Flat $1, excluded from the pool | Price them, if your league genuinely bids on kickers |
+| Replacement level | Exactly the last starter / last rostered | Average a band around the cutoff (less jumpy) |
 
-These are the knobs most likely to differ from the elboberto sheet. Each is one
-line in `valueModel.js`, and the tests pin the invariants that must survive any
-change: money conservation, a $1 floor at replacement level, and top values
-scaling with league size.
+The starter share is the one worth tuning: it decides how much of the budget
+concentrates at the top. Push it to 0.95 and studs get dearer while bench
+depth goes to scraps; drop it to 0.75 and the board flattens.
+
+Note what is deliberately *not* claimed: that top-end prices rise with league
+size. They come out roughly flat, because a bigger league brings both more
+money and more rostered players. The workbook behaves the same way.
 
 ## Interaction with live multipliers
 

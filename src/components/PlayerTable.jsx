@@ -19,15 +19,17 @@ export default function PlayerTable({
           <tr>
             <th style={styles.th}>Player</th>
             <th style={styles.th}>Pos</th>
+            <th style={styles.thNum} title="FantasyPros auction calculator (0.5 PPR), pasted in manually — the board's source of truth once it's there. See docs/DATA.md">FP $</th>
             <th style={styles.thNum} title="Bottom-up value from projections for this league's settings">Model $</th>
+            <th style={styles.thNum} title="Model minus FP $: positive means the model rates him higher than FantasyPros does">Model Edge</th>
             <th
               style={styles.thNum}
               title={`What ${siteLabel} publishes — the number the rest of your room is anchored to. Hover a cell to see every source.`}
             >
               {siteLabel} $
             </th>
-            <th style={styles.thNum} title={`Model minus ${siteLabel}: positive means the room is underpricing him`}>Edge</th>
-            <th style={styles.thNum} title="Model value adjusted for live budget inflation and positional scarcity">Live $</th>
+            <th style={styles.thNum} title={`FP $ minus ${siteLabel}: positive means ${siteLabel} is pricing him below what FantasyPros thinks he's worth — a bargain`}>Site Edge</th>
+            <th style={styles.thNum} title="Value adjusted for live budget inflation and positional scarcity, based on FP $ where it's been pasted in and model $ otherwise">Live $</th>
             <th style={styles.thDraft}>Draft</th>
           </tr>
         </thead>
@@ -48,7 +50,7 @@ export default function PlayerTable({
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={7} style={styles.empty}>
+              <td colSpan={9} style={styles.empty}>
                 No players match these filters.
                 {onClearFilters && (
                   <button style={styles.clearFilters} onClick={onClearFilters}>
@@ -75,7 +77,11 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, onR
     <tr style={{ opacity: p.drafted ? 0.5 : 1, background: mine ? "rgba(216,166,61,0.07)" : "transparent" }}>
       <td style={styles.tdName}>{p.name}</td>
       <td style={styles.td}><span style={styles.posPill}>{p.pos}</span></td>
+      <td style={styles.tdNum}>
+        {v.fp != null ? money(v.fp) : <span style={{ color: C.dimmer }}>—</span>}
+      </td>
       <td style={styles.tdNum}>{money(v.model)}</td>
+      <td style={{ ...styles.tdNum, color: deltaColor(v.modelEdge) }}>{edgeText(v.modelEdge)}</td>
       <td style={styles.tdNum} title={marketBreakdown(p, v)}>
         {v.site != null && money(v.site)}
         {/* No value from the league's own platform — show the consensus of the
@@ -85,18 +91,17 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, onR
         )}
         {v.site == null && v.consensus == null && <span style={{ color: C.dimmer }}>—</span>}
       </td>
-      <td style={{ ...styles.tdNum, color: deltaColor(v.edge) }}>
-        {v.market
-          ? `${v.edge > 0 ? "+" : v.edge < 0 ? "−" : ""}${Math.abs(Math.round(v.edge))}`
-          : ""}
-      </td>
+      <td style={{ ...styles.tdNum, color: deltaColor(v.siteEdge) }}>{edgeText(v.siteEdge)}</td>
+      {/* The delta keeps its width whether or not there's a number in it, so
+          the dollar figures stay in one straight column down the page. */}
       <td style={styles.tdNum}>
-        <span style={{ fontWeight: 700 }}>{money(v.live)}</span>
-        {Math.round(v.live - v.model) !== 0 && (
-          <span style={{ fontSize: 10, color: deltaColor(v.live - v.model), marginLeft: 5 }}>
-            {v.live > v.model ? "+" : "−"}{Math.abs(Math.round(v.live - v.model))}
+        <span style={styles.liveCell}>
+          <span style={{ fontWeight: 700 }}>{money(v.live)}</span>
+          <span style={{ ...styles.liveDelta, color: deltaColor(v.live - v.basis) }}>
+            {Math.round(v.live - v.basis) !== 0 &&
+              `${v.live > v.basis ? "+" : "−"}${Math.abs(Math.round(v.live - v.basis))}`}
           </span>
-        )}
+        </span>
       </td>
       <td style={styles.tdDraft}>
         {p.drafted ? (
@@ -166,12 +171,20 @@ function VerdictTag({ paid, snap }) {
   );
 }
 
+/** Signed edge display, blank rather than $0 when there's nothing to
+ *  compare against (no FP $ pasted in yet). */
+function edgeText(d) {
+  if (d == null) return "";
+  return `${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(Math.round(d))}`;
+}
+
 function marketBreakdown(p, v) {
   const parts = [];
   if (p.yahoo != null) parts.push(`Yahoo $${p.yahoo}`);
   if (p.espn != null) parts.push(`ESPN $${p.espn}`);
   if (p.nffc != null) parts.push(`NFFC $${p.nffc}`);
   if (p.sleeper != null) parts.push(`Sleeper $${p.sleeper}`);
+  if (p.fantasypros != null) parts.push(`FantasyPros $${p.fantasypros}`);
   if (parts.length === 0) return "no published values";
   if (v?.consensus != null && parts.length > 1) {
     parts.push(`consensus $${Math.round(v.consensus)}`);
@@ -196,6 +209,8 @@ const styles = {
   tdName: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" },
   tdNum: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, textAlign: "right", fontFamily: F.mono },
   tdDraft: { padding: "5px 12px", borderBottom: `1px solid #1c261f` },
+  liveCell: { display: "inline-flex", alignItems: "baseline", justifyContent: "flex-end" },
+  liveDelta: { fontSize: 10, width: 22, textAlign: "left", paddingLeft: 5, flex: "0 0 auto" },
   posPill: {
     fontFamily: F.mono, fontSize: 10.5, fontWeight: 700, color: C.dim,
     border: `1px solid ${C.line2}`, borderRadius: 4, padding: "1px 6px",

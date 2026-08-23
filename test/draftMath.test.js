@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DEFAULT_SETTINGS, defaultTeams, teamSlotBreakdown, computeBaseline, computeLive,
+  leagueFillCounts,
 } from "../src/lib/draftMath.js";
 
 const settings = { ...DEFAULT_SETTINGS };
@@ -61,6 +62,24 @@ test("overflow at a position spills into FLEX before the bench", () => {
   assert.equal(bd.dedicatedFilled.RB, roster.RB);
   assert.equal(bd.flexFilled, 1);
   assert.equal(bd.benchFilled, 0);
+});
+
+test("leagueFillCounts: one team's 5 WRs read as 5 taken, 1 flex filled, 1 bench filled", () => {
+  const roster = settings.roster; // WR: 3, FLEX: 1
+  const teams = defaultTeams(settings.numTeams);
+  const players = pool();
+  const wrs = players.filter((p) => p.pos === "WR").slice(0, 5);
+  const ids = new Set(wrs.map((p) => p.id));
+  const withPicks = players.map((p) =>
+    ids.has(p.id) ? { ...p, drafted: true, paid: 5, draftedBy: teams[0].id } : p
+  );
+  const counts = leagueFillCounts(withPicks, teams, roster);
+  assert.equal(counts.taken.WR, 5);
+  assert.equal(counts.flexFilled, 1);
+  assert.equal(counts.benchFilled, 1);
+  // Untouched positions and other teams contribute nothing.
+  assert.equal(counts.taken.RB, 0);
+  assert.equal(counts.taken.QB, 0);
 });
 
 test("scarcity multipliers stay inside the [0.4, 3] clamp when a position is wiped out", () => {
