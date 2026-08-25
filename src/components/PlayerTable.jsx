@@ -28,8 +28,12 @@ export default function PlayerTable({
   const [visible, setVisible] = useState({ fp: true, model: true, etr: true });
   const toggleVisible = (key) => setVisible((v) => ({ ...v, [key]: !v[key] }));
 
-  const columnCount = 2 /* player, pos */ + SRC_COLUMNS.length + 1 /* spacer */
-    + (showSite ? 2 : 0) + 1 /* live */ + 1 /* draft */;
+  // Player+Pos / FP+JP+ETR / Site+SiteEdge / Live $ / Draft read as five
+  // clusters, not nine ordinary columns — a spacer column sits between each
+  // one so the grouping is visible at a glance, matching the "bundle the
+  // related numbers" layout Pete mocked up.
+  const columnCount = 2 /* player, pos */ + 1 /* spacer */ + SRC_COLUMNS.length + 1 /* spacer */
+    + (showSite ? 2 : 0) + 1 /* spacer */ + 1 /* live */ + 1 /* spacer */ + 1 /* draft */;
 
   return (
     <div style={styles.wrap}>
@@ -38,6 +42,7 @@ export default function PlayerTable({
           <tr>
             <th style={styles.th}>Player</th>
             <th style={styles.thCenter}>Pos</th>
+            <th style={styles.thGap} aria-hidden />
             {SRC_COLUMNS.map((c) => (
               <th
                 key={c.key}
@@ -100,9 +105,11 @@ export default function PlayerTable({
                 </th>
               </>
             )}
+            <th style={styles.thGapWide} aria-hidden />
             <th style={{ ...styles.thNum, ...styles.thLive }} title="Value adjusted for live budget inflation and positional scarcity, based on whichever source is selected as the basis">
               Live $
             </th>
+            <th style={styles.thGapWide} aria-hidden />
             <th style={styles.thDraft}>Draft</th>
           </tr>
         </thead>
@@ -151,6 +158,7 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, max
     <tr style={{ opacity: p.drafted ? 0.5 : 1, background: mine ? "rgba(216,166,61,0.07)" : "transparent" }}>
       <td style={styles.tdName}>{p.name}</td>
       <td style={styles.tdCenter}><span style={styles.posPill}>{p.pos}</span></td>
+      <td style={styles.tdGap} aria-hidden />
       {SRC_COLUMNS.map((c) => (
         <td key={c.key} style={{ ...styles.tdNum, ...styles.tdSrc }}>
           {visible[c.key] && (
@@ -173,6 +181,7 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, max
           <td style={{ ...styles.tdNum, color: deltaColor(v.siteEdge) }}>{edgeText(v.siteEdge)}</td>
         </>
       )}
+      <td style={styles.tdGapWide} aria-hidden />
       {/* The delta keeps its width whether or not there's a number in it, so
           the dollar figures stay in one straight column down the page. */}
       <td style={{ ...styles.tdNum, ...styles.tdLive }}>
@@ -184,6 +193,7 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, max
           </span>
         </span>
       </td>
+      <td style={styles.tdGapWide} aria-hidden />
       <td style={styles.tdDraft}>
         {p.drafted ? (
           <div style={styles.draftedInfo}>
@@ -299,7 +309,10 @@ const styles = {
   // together, reading as one compact block rather than three ordinary columns.
   thSrc: { padding: "9px 6px" },
   thSrcHidden: { padding: "9px 3px", textAlign: "center" },
-  thGap: { ...headCell, width: 18, padding: 0 },
+  thGap: { ...headCell, width: 22, padding: 0 },
+  // A little wider than the other gaps — Live $ is the one number worth
+  // singling out, so it gets more air on both sides than the bundles do.
+  thGapWide: { ...headCell, width: 32, padding: 0 },
   thLive: { color: C.gold, textAlign: "center" },
   thDraft: { ...headCell, textAlign: "right", minWidth: 250 },
   srcHeadInner: { display: "inline-flex", alignItems: "center", gap: 4 },
@@ -318,7 +331,8 @@ const styles = {
   tdName: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" },
   tdNum: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, textAlign: "right", fontFamily: F.mono },
   tdSrc: { padding: "7px 6px" },
-  tdGap: { padding: 0, width: 18, borderBottom: `1px solid #1c261f` },
+  tdGap: { padding: 0, width: 22, borderBottom: `1px solid #1c261f` },
+  tdGapWide: { padding: 0, width: 32, borderBottom: `1px solid #1c261f` },
   tdLive: { padding: "7px 14px", textAlign: "center" },
   tdDraft: { padding: "5px 12px", borderBottom: `1px solid #1c261f` },
   liveCell: { display: "inline-flex", alignItems: "baseline", justifyContent: "center" },
