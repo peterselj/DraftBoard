@@ -102,9 +102,9 @@ export default function PlayerTable({
                 </th>
                 <th
                   style={{ ...styles.thNum, ...styles.thTight }}
-                  title={`Basis (${basisSource === "model" ? "JP" : basisSource === "etr" ? "ETR" : "FP"} $) minus ${siteLabel}: positive means ${siteLabel} is pricing him below what we think he's worth — a bargain`}
+                  title={`Site Edge — basis (${basisSource === "model" ? "JP" : basisSource === "etr" ? "ETR" : "FP"} $) minus ${siteLabel}: positive means ${siteLabel} is pricing him below what we think he's worth — a bargain. Shortened to "Edge" here so it doesn't force this column wider than ${siteLabel} $ needs, which was pushing the two apart.`}
                 >
-                  Site Edge
+                  Edge
                 </th>
               </>
             )}
