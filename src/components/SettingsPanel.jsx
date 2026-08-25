@@ -21,9 +21,18 @@ const PLATFORMS = [
   { key: "nffc", label: "NFFC", note: "needs a paste" },
 ];
 
+// Which pasted-in source Live $ is built from — one choice, not three prices
+// compared per player. "model" is always defined; "fp"/"etr" fall back to it
+// for anyone missing that pasted value.
+const BASES = [
+  { key: "fp", label: "FP $", note: "FantasyPros' 0.5 PPR calculator — real, externally calibrated money" },
+  { key: "model", label: "JP $", note: "our own bottom-up figure, shaped to this league's exact roster" },
+  { key: "etr", label: "ETR $", note: "Establish The Run's values" },
+];
+
 export default function SettingsPanel({
   settings, teams, updateRoster, updateNumTeams, renameTeam, setMyTeam, setBudget, applyTeamNames,
-  setScoring, setPlatform, setStarterShare,
+  setScoring, setPlatform, setStarterShare, setBasisSource,
 }) {
   const scoring = settings.scoring || DEFAULT_SCORING;
   const activePreset = Object.entries(SCORING_PRESETS).find(
@@ -66,6 +75,28 @@ export default function SettingsPanel({
             <option key={p.key} value={p.key}>{p.label} — {p.note}</option>
           ))}
         </select>
+
+        <div style={{ ...ui.heading, marginTop: 14 }}>Value basis</div>
+        <div style={styles.help}>
+          What Live $ is built from. Everything else — Site Edge included —
+          measures against this one number instead of comparing sources.
+        </div>
+        <div style={styles.basisTabs}>
+          {BASES.map((b) => (
+            <button
+              key={b.key}
+              style={{
+                ...styles.basisTab,
+                ...((settings.basisSource || "fp") === b.key ? styles.basisTabActive : {}),
+              }}
+              onClick={() => setBasisSource(b.key)}
+              title={b.note}
+              aria-pressed={(settings.basisSource || "fp") === b.key}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={styles.col}>
@@ -185,6 +216,13 @@ const styles = {
   starBtn: { background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" },
   teamNameInput: { ...ui.input, flex: 1, fontSize: 12, padding: "3px 6px" },
   help: { fontSize: 10.5, color: C.dimmer, lineHeight: 1.45, margin: "8px 0 6px" },
+  basisTabs: { display: "flex", gap: 4 },
+  basisTab: {
+    flex: 1, background: C.panel, border: "1px solid", borderColor: C.line, color: C.dim,
+    fontSize: 11.5, fontWeight: 700, padding: "6px 0", borderRadius: 5, cursor: "pointer",
+    fontFamily: F.mono,
+  },
+  basisTabActive: { background: C.gold, color: C.bg, borderColor: C.gold },
   textarea: {
     ...ui.input, width: "100%", minWidth: 190, fontFamily: F.body, resize: "vertical",
     lineHeight: 1.45,

@@ -8,9 +8,10 @@ import { C, F, ui } from "../theme.js";
 // NFFC is left out too — nobody's used it; add it back here (and to
 // MARKET_KEYS in App.jsx) if a league ever starts pricing off it.
 const MARKET_FIELDS = [
-  { key: "projected", label: "sheet value — feeds the model for anyone with no projections yet, not a market price" },
-  { key: "yahoo", label: "Yahoo market — Avg $, what drafters actually paid" },
-  { key: "fantasypros", label: "FantasyPros' FP $ — the board's calibrated source of truth; Model Edge and Site Edge are both measured against this" },
+  { key: "projected", short: "sheet", label: "sheet value — feeds the model for anyone with no projections yet, not a market price" },
+  { key: "yahoo", short: "yahoo", label: "Yahoo market — Avg $, what drafters actually paid" },
+  { key: "fantasypros", short: "FP $", label: "FantasyPros' FP $ — one of the selectable Live $ bases (Settings → Value basis)" },
+  { key: "etr", short: "ETR $", label: "Establish The Run's values — another selectable Live $ basis" },
 ];
 
 export function ago(iso) {
@@ -72,14 +73,21 @@ export default function DataPanel({ meta, importOpen, onImport }) {
             onChange={(e) => { setText(e.target.value); setResult(null); }}
           />
           <div style={styles.importControls}>
-            <label style={styles.fieldLabel}>
-              import into
-              <select style={{ ...ui.input, marginLeft: 8 }} value={field} onChange={(e) => setField(e.target.value)}>
-                {MARKET_FIELDS.map((f) => (
-                  <option key={f.key} value={f.key}>{f.key}</option>
-                ))}
-              </select>
-            </label>
+            <span style={styles.fieldLabel}>import into</span>
+            <div style={styles.fieldTabs}>
+              {MARKET_FIELDS.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  style={{ ...styles.fieldTab, ...(field === f.key ? styles.fieldTabActive : {}) }}
+                  onClick={() => setField(f.key)}
+                  title={f.label}
+                  aria-pressed={field === f.key}
+                >
+                  {f.short}
+                </button>
+              ))}
+            </div>
             <span style={styles.fieldHelp}>{MARKET_FIELDS.find((f) => f.key === field)?.label}</span>
             <button
               style={{ ...styles.applyBtn, opacity: preview?.rows.length ? 1 : 0.45 }}
@@ -135,7 +143,14 @@ const styles = {
   help: { fontSize: 11.5, color: C.dimmer, lineHeight: 1.5, marginBottom: 8, maxWidth: 620 },
   textarea: { ...ui.input, width: "100%", fontFamily: F.mono, fontSize: 12, resize: "vertical" },
   importControls: { display: "flex", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" },
-  fieldLabel: { fontSize: 11.5, color: C.bone, display: "flex", alignItems: "center" },
+  fieldLabel: { fontSize: 11.5, color: C.bone },
+  fieldTabs: { display: "flex", gap: 4 },
+  fieldTab: {
+    background: C.panel, border: "1px solid", borderColor: C.line, color: C.dim,
+    fontSize: 11, fontWeight: 700, fontFamily: F.mono, padding: "5px 9px",
+    borderRadius: 5, cursor: "pointer",
+  },
+  fieldTabActive: { background: C.gold, color: C.bg, borderColor: C.gold },
   fieldHelp: { fontSize: 11, color: C.dimmer, marginRight: "auto" },
   applyBtn: { background: C.gold, color: C.bg, border: "none", borderRadius: 5, padding: "7px 14px", fontWeight: 700, fontSize: 12, cursor: "pointer" },
   previewRows: { display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 },

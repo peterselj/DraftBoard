@@ -39,6 +39,7 @@ export function toAppPlayer(p) {
     yahoo: p.yahoo ?? null,
     nffc: p.nffc ?? null,
     sleeper: p.sleeper ?? null,
+    etr: p.etr ?? null,
     // Fallback standalone value for players the model can't price.
     projected: p.projected ?? p.espn ?? 1,
     ...blankDraftState,

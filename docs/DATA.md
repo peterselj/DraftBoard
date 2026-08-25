@@ -59,9 +59,9 @@ Choose which column the values land in:
 
 - `projected` — the standalone sheet value, used as the model value for players
   we have no projections for. Not a market price, so it isn't averaged in below.
-- `yahoo` / `fantasypros` — market columns. ESPN and Sleeper auto-refresh via
-  **Refresh** already, so they aren't offered here; NFFC has no source and
-  nobody's used it, so it's dropped from the dropdown too — both are still
+- `yahoo` / `fantasypros` / `etr` — market columns. ESPN and Sleeper auto-refresh
+  via **Refresh** already, so they aren't offered here; NFFC has no source and
+  nobody's used it, so it's dropped from the dropdown too — all three are still
   valid fields (`MARKET_KEYS` in `App.jsx`), just add them back to
   `MARKET_FIELDS` in `components/DataPanel.jsx` if a league starts needing them.
 
@@ -139,13 +139,13 @@ ignored on both sides, so Yahoo's "James Cook III" finds "James Cook".
 ## Getting FantasyPros' auction values — step by step
 
 FantasyPros' [auction values calculator](https://www.fantasypros.com/nfl/auction-values/calculator.php)
-is a separate, always-visible **FP $** column — the leftmost dollar column —
-rather than a "Drafting on" platform choice, since it's not a site anyone
-actually drafts on. It's the board's source of truth once it's pasted in for
-a player: **Model $** and **Site $** are each measured against it (**Model
-Edge**, **Site Edge**), and **Live $** is based on it too, falling back to
-Model $ for anyone who hasn't been pasted in yet. See CLAUDE.md's "Three-number
-model" section for the full picture.
+is a separate, always-visible **FP $** column — one of three selectable **Value
+basis** columns, alongside **JP $** (our own model) and **ETR $** — rather than
+a "Drafting on" platform choice, since it's not a site anyone actually drafts
+on. Pick one of the three as the basis (**Settings → Value basis**, or the
+check icon on its column header) and **Site Edge** and **Live $** are both
+measured against it. See CLAUDE.md's "Value basis" section for the full
+picture.
 
 1. **Open the page** and set the scoring format to match the league (0.5 PPR,
    unless told otherwise — check with whoever set the league scoring, since
@@ -153,7 +153,7 @@ model" section for the full picture.
 2. **Select the table and copy** — click above the "Player" header, drag to
    the bottom, Ctrl+C.
 3. **Paste it in.** Click **Import**, paste into the box, set *import into* →
-   **fantasypros**, and click apply.
+   **FP $**, and click apply.
 
 Like Yahoo, this page renders with JavaScript and sends no CORS header, so
 there's nothing to fetch automatically — paste is the only route in.
@@ -164,15 +164,27 @@ stitched together, one per position, each with its own repeated header row
 cell — `Josh Allen, BUF`, sometimes with an injury badge stuck on with no
 space (`Patrick Mahomes II, KCDTD`). The importer drops the repeated headers,
 tags each row with the position from whichever header preceded it, and strips
-everything from the first comma onward before matching names.
+everything from the first comma onward before matching names. A prose blurb
+some sites (FantasyPros included) put above the table gets stripped too, the
+same way — see the "prose blurb" regression test in `test/importParse.test.js`
+for the shape that broke this once.
+
+## Getting Establish The Run's auction values — step by step
+
+Same idea as FantasyPros: a paste-in column, no live source. Copy the table
+from ETR's auction values page, click **Import**, paste in, set *import into*
+→ **ETR $**, and apply. It lands in `p.etr` and is selectable as the Value
+basis the same way FP $ and JP $ are.
 
 ## Telling the board which site you're on
 
 **Settings → Drafting on** picks which source fills the **Site $** column and
-what **Edge** is measured against. Set it to the platform your auction actually
-runs on: that's the number on everyone's screen, and it anchors the bidding
-whether or not they've done their own homework — especially if a single team is
-on autodraft.
+what **Site Edge** is measured against (via the chosen Value basis). Set it to
+the platform your auction actually runs on: that's the number on everyone's
+screen, and it anchors the bidding whether or not they've done their own
+homework — especially if a single team is on autodraft. Sleeper publishes no
+target auction values at all, so choosing it drops the **Site $** and **Site
+Edge** columns entirely rather than showing an empty one.
 
 If the selected platform has no value for a player, the cell shows the
 consensus of the other sources in italics with a `~`, so a fallback is never
