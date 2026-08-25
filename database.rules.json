@@ -1,0 +1,14 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "rooms": {
+      "$room": {
+        ".read": "$room.length <= 32",
+        ".write": "$room.length <= 32",
+        ".validate": "newData.hasChildren()"
+      }
+    }
+  }
+}
