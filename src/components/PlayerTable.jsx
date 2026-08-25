@@ -130,6 +130,7 @@ export default function PlayerTable({
               maxBidFor={maxBidFor}
               visible={visible}
               showSite={showSite}
+              basisSource={basisSource}
             />
           ))}
           {rows.length === 0 && (
@@ -150,7 +151,7 @@ export default function PlayerTable({
   );
 }
 
-function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, maxBidFor, visible, showSite }) {
+function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, maxBidFor, visible, showSite, basisSource }) {
   const v = p._val;
   const state = input || { price: "", teamId: "" };
   const priceNum = parseInt(state.price, 10);
@@ -163,7 +164,14 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, max
       <td style={styles.tdCenter}><span style={styles.posPill}>{p.pos}</span></td>
       <td style={styles.tdGap} aria-hidden />
       {SRC_COLUMNS.map((c) => (
-        <td key={c.key} style={{ ...styles.tdNum, ...styles.tdTight }}>
+        <td
+          key={c.key}
+          style={{
+            ...styles.tdNum,
+            ...styles.tdTight,
+            ...(basisSource === c.key ? styles.tdBasisActive : null),
+          }}
+        >
           {visible[c.key] && (
             v[c.valueKey] != null ? money(v[c.valueKey]) : <span style={{ color: C.dimmer }}>—</span>
           )}
@@ -334,6 +342,10 @@ const styles = {
   tdName: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" },
   tdNum: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, textAlign: "right", fontFamily: F.mono },
   tdTight: { padding: "7px 4px" },
+  // The header already marks the active basis column in gold; bolding the
+  // actual number too means you can tell which source Live $ is built from
+  // by glancing at any row, not just the header at the top of the table.
+  tdBasisActive: { fontWeight: 700, color: C.bone },
   tdGap: { padding: 0, width: 26, borderBottom: `1px solid #1c261f` },
   tdGapWide: { padding: 0, width: 34, borderBottom: `1px solid #1c261f` },
   tdLive: { padding: "7px 14px", textAlign: "center" },
