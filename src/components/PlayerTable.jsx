@@ -49,13 +49,20 @@ export default function PlayerTable({
                 className="src-head"
                 style={{
                   ...styles.thNum,
-                  ...styles.thSrc,
+                  ...styles.thTight,
                   ...(visible[c.key] ? null : styles.thSrcHidden),
                 }}
                 title={c.title}
               >
                 {visible[c.key] ? (
-                  <span style={styles.srcHeadInner}>
+                  // The label text is the only thing that actually sits in
+                  // flow — it's what needs to line up with the right-aligned
+                  // numbers below. The eye/check controls are positioned
+                  // absolutely on top instead of sitting inline next to it:
+                  // inline, even hidden at opacity 0, they still take up
+                  // width and would push the visible label left of where
+                  // the data lines up.
+                  <>
                     <span style={{ color: basisSource === c.key ? C.gold : C.dim }}>{c.short} $</span>
                     <span className="src-ctrls" style={styles.srcCtrls}>
                       <button
@@ -75,7 +82,7 @@ export default function PlayerTable({
                         <Check size={11} color={basisSource === c.key ? C.gold : undefined} />
                       </button>
                     </span>
-                  </span>
+                  </>
                 ) : (
                   <button
                     type="button"
@@ -92,13 +99,13 @@ export default function PlayerTable({
             {showSite && (
               <>
                 <th
-                  style={styles.thNum}
+                  style={{ ...styles.thNum, ...styles.thTight }}
                   title={`What ${siteLabel} publishes — the number the rest of your room is anchored to. Hover a cell to see every source.`}
                 >
                   {siteLabel} $
                 </th>
                 <th
-                  style={styles.thNum}
+                  style={{ ...styles.thNum, ...styles.thTight }}
                   title={`Basis (${basisSource === "model" ? "JP" : basisSource === "etr" ? "ETR" : "FP"} $) minus ${siteLabel}: positive means ${siteLabel} is pricing him below what we think he's worth — a bargain`}
                 >
                   Site Edge
@@ -160,7 +167,7 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, max
       <td style={styles.tdCenter}><span style={styles.posPill}>{p.pos}</span></td>
       <td style={styles.tdGap} aria-hidden />
       {SRC_COLUMNS.map((c) => (
-        <td key={c.key} style={{ ...styles.tdNum, ...styles.tdSrc }}>
+        <td key={c.key} style={{ ...styles.tdNum, ...styles.tdTight }}>
           {visible[c.key] && (
             v[c.valueKey] != null ? money(v[c.valueKey]) : <span style={{ color: C.dimmer }}>—</span>
           )}
@@ -169,7 +176,7 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, max
       <td style={styles.tdGap} aria-hidden />
       {showSite && (
         <>
-          <td style={styles.tdNum} title={marketBreakdown(p, v)}>
+          <td style={{ ...styles.tdNum, ...styles.tdTight }} title={marketBreakdown(p, v)}>
             {v.site != null && money(v.site)}
             {/* No value from the league's own platform — show the consensus of the
                 other sources instead, marked so it isn't mistaken for the real one. */}
@@ -178,7 +185,7 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, max
             )}
             {v.site == null && v.consensus == null && <span style={{ color: C.dimmer }}>—</span>}
           </td>
-          <td style={{ ...styles.tdNum, color: deltaColor(v.siteEdge) }}>{edgeText(v.siteEdge)}</td>
+          <td style={{ ...styles.tdNum, ...styles.tdTight, color: deltaColor(v.siteEdge) }}>{edgeText(v.siteEdge)}</td>
         </>
       )}
       <td style={styles.tdGapWide} aria-hidden />
@@ -305,23 +312,29 @@ const styles = {
   th: { ...headCell, textAlign: "left" },
   thCenter: { ...headCell, textAlign: "center" },
   thNum: { ...headCell, textAlign: "right" },
-  // The FP $ / JP $ / ETR $ stack: tight padding so the three sit close
-  // together, reading as one compact block rather than three ordinary columns.
-  thSrc: { padding: "9px 6px" },
+  // Applied to both bundles — FP $/JP $/ETR $ and Site $/Site Edge — so each
+  // reads as one tight block. The gap columns (much wider) are what separate
+  // the blocks from each other; this is what keeps a block's own columns
+  // close together instead of spread as far apart as the blocks are.
+  thTight: { padding: "9px 4px" },
   thSrcHidden: { padding: "9px 3px", textAlign: "center" },
-  thGap: { ...headCell, width: 22, padding: 0 },
+  thGap: { ...headCell, width: 26, padding: 0 },
   // A little wider than the other gaps — Live $ is the one number worth
   // singling out, so it gets more air on both sides than the bundles do.
-  thGapWide: { ...headCell, width: 32, padding: 0 },
+  thGapWide: { ...headCell, width: 34, padding: 0 },
   thLive: { color: C.gold, textAlign: "center" },
   thDraft: { ...headCell, textAlign: "right", minWidth: 250 },
-  srcHeadInner: { display: "inline-flex", alignItems: "center", gap: 4 },
-  // Hidden until the header is hovered — opacity is set by the `.src-ctrls` /
-  // `.src-head:hover .src-ctrls` rules in App.jsx's GlobalStyle, not here: an
-  // inline style always wins over a class rule, which would make the CSS
-  // :hover toggle a no-op. Keeping these tiny and out of the way is the
-  // point: they're for setup, not something you look at mid-auction.
-  srcCtrls: { display: "inline-flex", gap: 2 },
+  // Positioned outside the header's own box (to the right of it, floating
+  // over the gap column) rather than inline next to the label — inline, even
+  // hidden at opacity 0, the icons would still take up width and push the
+  // visible label left of where the right-aligned data actually lines up.
+  // Opacity itself is set by the `.src-ctrls` / `.src-head:hover .src-ctrls`
+  // rules in App.jsx's GlobalStyle, not here: an inline style always wins
+  // over a class rule, which would make the CSS :hover toggle a no-op.
+  srcCtrls: {
+    position: "absolute", left: "100%", top: "50%", transform: "translateY(-50%)",
+    marginLeft: 3, display: "inline-flex", gap: 2, zIndex: 20,
+  },
   srcIconBtn: {
     background: "none", border: "none", color: C.dim, cursor: "pointer",
     padding: 1, display: "inline-flex", lineHeight: 0,
@@ -330,9 +343,9 @@ const styles = {
   tdCenter: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, textAlign: "center" },
   tdName: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" },
   tdNum: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, textAlign: "right", fontFamily: F.mono },
-  tdSrc: { padding: "7px 6px" },
-  tdGap: { padding: 0, width: 22, borderBottom: `1px solid #1c261f` },
-  tdGapWide: { padding: 0, width: 32, borderBottom: `1px solid #1c261f` },
+  tdTight: { padding: "7px 4px" },
+  tdGap: { padding: 0, width: 26, borderBottom: `1px solid #1c261f` },
+  tdGapWide: { padding: 0, width: 34, borderBottom: `1px solid #1c261f` },
   tdLive: { padding: "7px 14px", textAlign: "center" },
   tdDraft: { padding: "5px 12px", borderBottom: `1px solid #1c261f` },
   liveCell: { display: "inline-flex", alignItems: "baseline", justifyContent: "center" },

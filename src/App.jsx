@@ -730,6 +730,13 @@ function GlobalStyle() {
          style always beats a class rule, which would make :hover a no-op. */
       .src-ctrls { opacity: 0; transition: opacity 0.12s ease; }
       .src-head:hover .src-ctrls { opacity: 1; }
+      /* The controls overlay spills past the header's own right edge onto
+         the next column. Sibling <th>s share the same sticky z-index, so
+         without this the later column in DOM order paints over it and eats
+         the clicks — !important is required to beat the inline z-index
+         (headCell sets it for the sticky-above-body-content behavior), the
+         same inline-vs-class problem the opacity rule above works around. */
+      .src-head:hover { z-index: 30 !important; }
       ::-webkit-scrollbar { height: 8px; width: 8px; }
       ::-webkit-scrollbar-thumb { background: #2a352d; border-radius: 4px; }
       @keyframes riseIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
