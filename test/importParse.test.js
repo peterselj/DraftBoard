@@ -172,6 +172,30 @@ test("FantasyPros' repeated per-position headers don't wreck column detection", 
   );
 });
 
+test("a prose blurb above FantasyPros' table doesn't hijack the value column", () => {
+  // The live page prepends a line like this above the table itself. It has
+  // no dollar sign (so it reads as a header) and contains the word "values"
+  // (so a naive header-keyword search picks *it* as the value column instead
+  // of the real "Value" header a couple lines down).
+  const BLURB =
+    "*Values are based on a standard roster. Use our Draft Wizard to get custom values.\n" +
+    FANTASYPROS_PASTE;
+  const { rows, warnings } = parseImport(BLURB);
+  assert.deepEqual(warnings, []);
+  assert.deepEqual(
+    rows.map((r) => [r.name, r.pos, r.value]),
+    [
+      ["Josh Allen", "QB", 31],
+      ["Patrick Mahomes II", "QB", 6],
+      ["Houston Texans", "DEF", 2],
+      ["Jahmyr Gibbs", "RB", 62],
+      ["James Cook III", "RB", 37],
+      ["Austin Ekeler", "RB", 0],
+      ["Marvin Harrison Jr.", "WR", 13],
+    ]
+  );
+});
+
 test("FantasyPros rows land on the right players despite the team in the name cell", () => {
   const { rows } = parseImport(FANTASYPROS_PASTE);
   const { players, matched, unmatched } = applyImport(pool, rows, "fantasypros");

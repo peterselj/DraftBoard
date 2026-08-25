@@ -84,12 +84,27 @@ const normalizePos = (v) => {
 export function parseImport(text) {
   const warnings = [];
   const delim = detectDelimiter(text);
-  const lines = String(text || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  let lines = String(text || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (lines.length === 0) return { rows: [], warnings: ["Nothing to import."], delimiter: delim };
 
   // Vertical paste (Yahoo and friends) — try it before column detection,
   // since these pastes have almost no delimiters to detect.
   const delimitedLines = lines.filter((l) => l.includes(delim)).length;
+
+  // Sites often prepend a line or two of prose above the actual table —
+  // FantasyPros' auction calculator leads with "*Values are based on a
+  // standard roster... Use our Draft Wizard..." above the header row. A real
+  // header or data row in a delimited paste contains the delimiter; a line
+  // that doesn't is stray text, not the header. Left in place it gets mistaken
+  // for the header (no dollar sign in it) and — worse — its prose can contain
+  // a stray match for a column keyword like "value", hijacking column
+  // detection below. Only strip when this genuinely looks like a delimited
+  // paste (most lines contain the delimiter); a Yahoo-style vertical paste
+  // has none, so this leaves it untouched.
+  if (delimitedLines >= lines.length / 2) {
+    while (lines.length > 1 && !lines[0].includes(delim)) lines.shift();
+  }
+
   if (delimitedLines < lines.length / 2) {
     const rows = parseVerticalBlocks(lines);
     if (rows.length > 0) {
