@@ -26,6 +26,10 @@ export const DEFAULT_SETTINGS = {
   scoring: DEFAULT_SCORING,
   // Which site the auction runs on; its published values anchor the room.
   platform: "espn",
+  // Which pasted-in source Live $ is built from: "fp" (FantasyPros), "model"
+  // (our own bottom-up figure), or "etr" (Establish The Run). Falls back to
+  // the model value for any player missing the chosen source.
+  basisSource: "fp",
   // Share of the biddable money that goes to starters rather than bench
   // depth. 0.88 is the elboberto sheet's figure.
   starterShare: 0.88,

@@ -41,26 +41,37 @@ scripts/             — data refresh pipeline (sources/ + refresh.mjs)
   silently reinterpreting old units is worse than discarding them. The
   head-count → dollars change in the scarcity baseline is the cautionary tale.
 
-## Three-number model (important)
+## Value basis (important)
 
-`model $` is derived bottom-up from projected fantasy points for *this* league's settings.
-`FP $` is FantasyPros' 0.5 PPR auction calculator, pasted in by hand — the board's source
-of truth once it's there for a player, real calibrated auction money rather than a guess.
-`site $` is published AAV from whichever platform the league drafts on (Settings → Drafting
-on) — what's actually on the room's screen.
+Three prices exist per player, and they answer different questions rather than competing
+for the same one:
 
-Model and site are each measured *against* FP $, not blended into one number, and the two
-edges run in opposite directions on purpose: `modelEdge = model$ − FP$` just compares two
-value estimates (no money changes hands, so there's no "good" direction). `siteEdge = FP$ −
-site$` is a price-vs-value bet — positive means the room's published price is *below* what
-FP thinks he's worth, a bargain — so it keeps the "green is good" sense the old blended Edge
-always had. Getting this backwards (`site$ − FP$`) is the bug to watch for: it colors a
-bargain red.
+- **`JP $`** (`p.model` / `baseValueOf`) — our own bottom-up figure, derived from projected
+  fantasy points for *this* league's exact roster shape (scoring → VORP → $, the elboberto
+  model). What *we* think he's worth.
+- **`FP $`** (`p.fantasypros`) — FantasyPros' 0.5 PPR auction calculator, pasted in by hand.
+  Real, externally calibrated auction money, but assumes a standard roster, not this
+  league's.
+- **`ETR $`** (`p.etr`) — Establish The Run's values, pasted in by hand. Another external
+  reference, same role as FP $.
+- **`site $`** — published AAV from whichever platform the league drafts on (Settings →
+  Drafting on). What's actually on the room's screen — a market-price fact, not a valuation.
 
-Live value applies the draft-state multipliers on top of FP $ (falling back to model $ for
-players nobody's pasted an FP figure in for — budget inflation and scarcity need a number
-for every undrafted player to stay calibrated to the whole pot):
-`liveValue = 1 + (basis − 1) × budgetInflation × scarcity[pos]`, `basis = FP$ ?? model$`
+**One of FP $ / JP $ / ETR $ is picked as *the basis*** — `Settings → Value basis`, or the
+check icon on a column header in `PlayerTable` — and everything else measures against
+*that* number instead of the three being compared to each other. `App.jsx`'s `basisOf(p)`
+resolves it: `model` always resolves to the bottom-up figure; `fp` / `etr` read the pasted
+field and fall back to `model` for anyone missing it, since budget inflation and scarcity
+need a number for every undrafted player to stay calibrated to the whole pot.
+
+`siteEdge = basis − site$` is the one comparison that survives: positive means the room's
+published price is *below* whichever source is the basis — a bargain, "green is good".
+Getting this backwards (`site$ − basis`) is the bug to watch for: it colors a bargain red.
+There's no more "Model Edge" (comparing sources to each other) — once one of them is *the*
+number, comparing it to the others isn't a decision input, it's just diagnostic noise.
+
+Live $ applies the draft-state multipliers on top of the basis:
+`liveValue = 1 + (basis − 1) × budgetInflation × scarcity[pos]`
 
 ## Data
 

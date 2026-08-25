@@ -27,7 +27,11 @@ import { PressureGauge, ScarcityChips, TeamStrip } from "./components/Dashboard.
 
 const freshPlayers = seedPlayers;
 
-const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper", "fantasypros"];
+const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper", "fantasypros", "etr"];
+
+// Which pasted-in field each basis source reads from. "model" has no field —
+// it's always the bottom-up figure itself, never a pasted number.
+const BASIS_FIELD = { fp: "fantasypros", etr: "etr" };
 
 // Single-letter position filters, same toggle behavior as clicking the pill.
 // "D" is DEF rather than DST to match POSITIONS in draftMath.js.
@@ -151,20 +155,24 @@ function Board({ room, onLeave }) {
     [modelValues]
   );
 
-  // FantasyPros' 0.5 PPR calculator (pasted in via Import → fantasypros) is
-  // the board's source of truth once it's there for a player: real, already-
-  // calibrated auction money, rather than either our own bottom-up guess or
-  // one platform's AAV. Everything else is measured *against* it — Model $
-  // and Site $ each get their own edge relative to FP $ — instead of folding
-  // into one blended "market" figure.
-  //
-  // Budget inflation and scarcity (computeBaseline/computeLive) need a value
-  // for every undrafted player to stay calibrated to the whole pot, and FP $
-  // is only ever pasted in for the top of the pool — so this falls back to
-  // the model value for anyone it's missing for, rather than leaving gaps.
-  const fpBasisOf = useCallback(
-    (p) => (typeof p.fantasypros === "number" && p.fantasypros > 0 ? p.fantasypros : baseValueOf(p)),
-    [baseValueOf]
+  // Which pasted-in source Live $ is built from — FP $, ETR $, or the model
+  // itself — is a choice made once in Settings (or from the column headers),
+  // not something juggled per player. Whichever one is chosen becomes *the*
+  // number: Site Edge and Live $ both measure against it, no more comparing
+  // three prices in your head. "model" always resolves; "fp"/"etr" fall back
+  // to the model value for anyone missing that pasted field, since budget
+  // inflation and scarcity (computeBaseline/computeLive) need a number for
+  // every undrafted player to stay calibrated to the whole pot, and neither
+  // FP $ nor ETR $ is ever pasted in for the whole pool.
+  const basisSource = settings.basisSource || "fp";
+  const basisOf = useCallback(
+    (p) => {
+      if (basisSource === "model") return baseValueOf(p);
+      const field = BASIS_FIELD[basisSource];
+      const raw = p[field];
+      return typeof raw === "number" && raw > 0 ? raw : baseValueOf(p);
+    },
+    [baseValueOf, basisSource]
   );
 
   // The scarcity baseline is derived from the *whole* pool — drafted players
@@ -172,13 +180,13 @@ function Board({ room, onLeave }) {
   // the live figure uses. Snapshotting it instead went stale the moment league
   // settings changed, because model dollars scale with the size of the pot.
   const baselineRatio = useMemo(
-    () => computeBaseline(settings, players, fpBasisOf),
-    [settings, players, fpBasisOf]
+    () => computeBaseline(settings, players, basisOf),
+    [settings, players, basisOf]
   );
 
   const live = useMemo(
-    () => computeLive(players, teams, settings, baselineRatio, fpBasisOf),
-    [players, teams, settings, baselineRatio, fpBasisOf]
+    () => computeLive(players, teams, settings, baselineRatio, basisOf),
+    [players, teams, settings, baselineRatio, basisOf]
   );
 
   // Plain head counts alongside the scarcity multipliers — how many bodies
@@ -198,23 +206,23 @@ function Board({ room, onLeave }) {
     (p) => {
       const model = baseValueOf(p);
       const fp = typeof p.fantasypros === "number" && p.fantasypros > 0 ? p.fantasypros : null;
+      const etr = typeof p.etr === "number" && p.etr > 0 ? p.etr : null;
       const consensus = marketValue(p);
       const site = siteValue(p, platform);
-      const basis = fpBasisOf(p);
+      const basis = basisOf(p);
       return {
         model,
         fp,
+        etr,
         site,
         consensus,
-        // How far our own number and the room's number each sit from FP $ —
-        // kept apart rather than blended, since they're different bets. Model
-        // Edge just compares two value estimates (model − FP), no money
-        // involved. Site Edge is a price-vs-value bet, so it runs the other
-        // direction (FP − site): positive means the room's published price
-        // is *below* what FP thinks he's worth — a bargain, same "green is
-        // good" sense the old blended Edge always had.
-        modelEdge: fp == null ? null : model - fp,
-        siteEdge: fp == null || site == null ? null : fp - site,
+        // Site Edge is the one comparison that still matters once a basis is
+        // chosen: basis minus the room's price. Positive means the room is
+        // pricing him below whichever source you've picked as truth — a
+        // bargain, "green is good". There's no Model Edge anymore — comparing
+        // sources to each other stopped being useful the moment one of them
+        // became *the* number.
+        siteEdge: site == null ? null : basis - site,
         // Best available stand-in for "true" market value, for the
         // quick-entry preview and anywhere else a single number is needed.
         market: fp ?? consensus,
@@ -222,7 +230,7 @@ function Board({ room, onLeave }) {
         live: adjustedValue(p, live, basis),
       };
     },
-    [live, baseValueOf, fpBasisOf, platform]
+    [live, baseValueOf, basisOf, platform]
   );
 
   const effectivePos = useMemo(() => {
@@ -584,6 +592,7 @@ function Board({ room, onLeave }) {
           applyTeamNames={applyTeamNames}
           setScoring={(scoring) => setSettings((s) => ({ ...s, scoring }))}
           setPlatform={(p) => setSettings((s) => ({ ...s, platform: p }))}
+          setBasisSource={(v) => setSettings((s) => ({ ...s, basisSource: v }))}
           setStarterShare={(v) =>
             setSettings((s) => ({ ...s, starterShare: Math.min(1, Math.max(0.5, v || 0.88)) }))}
         />
@@ -673,6 +682,8 @@ function Board({ room, onLeave }) {
           maxBidFor={maxBidFor}
           onClearFilters={clearFilters}
           platform={platform}
+          basisSource={basisSource}
+          onSelectBasis={(v) => setSettings((s) => ({ ...s, basisSource: v }))}
         />
       </div>
 
@@ -713,6 +724,19 @@ function GlobalStyle() {
       input:focus, select:focus, textarea:focus { outline: 2px solid ${C.gold}; outline-offset: 1px; }
       button:focus-visible { outline: 2px solid ${C.gold}; outline-offset: 1px; }
       button:disabled { opacity: 0.4; cursor: not-allowed; }
+      /* FP $ / JP $ / ETR $ column headers: the show/hide and use-as-basis
+         icons stay out of the way until the header is actually hovered.
+         Opacity lives entirely here, not inline on the element — an inline
+         style always beats a class rule, which would make :hover a no-op. */
+      .src-ctrls { opacity: 0; transition: opacity 0.12s ease; }
+      .src-head:hover .src-ctrls { opacity: 1; }
+      /* The controls overlay spills past the header's own right edge onto
+         the next column. Sibling <th>s share the same sticky z-index, so
+         without this the later column in DOM order paints over it and eats
+         the clicks — !important is required to beat the inline z-index
+         (headCell sets it for the sticky-above-body-content behavior), the
+         same inline-vs-class problem the opacity rule above works around. */
+      .src-head:hover { z-index: 30 !important; }
       ::-webkit-scrollbar { height: 8px; width: 8px; }
       ::-webkit-scrollbar-thumb { background: #2a352d; border-radius: 4px; }
       @keyframes riseIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
