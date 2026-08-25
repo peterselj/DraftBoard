@@ -693,6 +693,10 @@ function Board({ room, onLeave }) {
         candidate · <b style={{ color: C.bone }}>Enter</b> log it · <b style={{ color: C.bone }}>Ctrl+Z</b> undo ·{" "}
         <b style={{ color: C.bone }}>h</b> hide drafted · <b style={{ color: C.bone }}>q r w t k d</b> filter
         position · <b style={{ color: C.bone }}>f</b> flex · <b style={{ color: C.bone }}>a</b> all
+        <div style={{ marginTop: 4 }}>
+          <b style={{ color: C.bone }}>double-click</b> a FP $/JP $/ETR $ header to use it as the Live $ basis ·{" "}
+          <b style={{ color: C.bone }}>triple-click</b> a header to hide (or restore) that column
+        </div>
       </div>
 
       {toast && (
@@ -724,19 +728,6 @@ function GlobalStyle() {
       input:focus, select:focus, textarea:focus { outline: 2px solid ${C.gold}; outline-offset: 1px; }
       button:focus-visible { outline: 2px solid ${C.gold}; outline-offset: 1px; }
       button:disabled { opacity: 0.4; cursor: not-allowed; }
-      /* FP $ / JP $ / ETR $ column headers: the show/hide and use-as-basis
-         icons stay out of the way until the header is actually hovered.
-         Opacity lives entirely here, not inline on the element — an inline
-         style always beats a class rule, which would make :hover a no-op. */
-      .src-ctrls { opacity: 0; transition: opacity 0.12s ease; }
-      .src-head:hover .src-ctrls { opacity: 1; }
-      /* The controls overlay spills past the header's own right edge onto
-         the next column. Sibling <th>s share the same sticky z-index, so
-         without this the later column in DOM order paints over it and eats
-         the clicks — !important is required to beat the inline z-index
-         (headCell sets it for the sticky-above-body-content behavior), the
-         same inline-vs-class problem the opacity rule above works around. */
-      .src-head:hover { z-index: 30 !important; }
       ::-webkit-scrollbar { height: 8px; width: 8px; }
       ::-webkit-scrollbar-thumb { background: #2a352d; border-radius: 4px; }
       @keyframes riseIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
