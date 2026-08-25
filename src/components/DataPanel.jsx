@@ -56,9 +56,10 @@ export default function DataPanel({ meta, importOpen, onImport }) {
             <br />
             <b style={{ color: C.bone }}>Yahoo:</b> open{" "}
             <span style={{ fontFamily: F.mono, fontSize: 11 }}>
-              football.fantasysports.yahoo.com/f1/draftanalysis?type=salcap
+              football.fantasysports.yahoo.com/f1/draftanalysis?type=salcap&pos=ALL&count=300
             </span>
-            , select the table, copy, paste here. Its one-cell-per-line layout is
+            {" "}(count=300 shows the full player pool instead of the default ~25),
+            select the table, copy, paste here. Its one-cell-per-line layout is
             handled, and <b style={{ color: C.bone }}>Avg $</b> (what people
             actually paid) is used rather than Yahoo's projected value.
           </div>

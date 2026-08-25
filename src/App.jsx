@@ -682,10 +682,6 @@ function Board({ room, onLeave }) {
         candidate · <b style={{ color: C.bone }}>Enter</b> log it · <b style={{ color: C.bone }}>Ctrl+Z</b> undo ·{" "}
         <b style={{ color: C.bone }}>h</b> hide drafted · <b style={{ color: C.bone }}>q r w t k d</b> filter
         position · <b style={{ color: C.bone }}>f</b> flex · <b style={{ color: C.bone }}>a</b> all
-        <div style={{ marginTop: 6 }}>
-          Live $ = model value adjusted for room pressure and positional scarcity. Scarcity is a
-          raw head-count ratio and doesn't yet account for tiers — see FEATURE_BACKLOG.md.
-        </div>
       </div>
 
       {toast && (
