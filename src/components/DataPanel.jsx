@@ -3,13 +3,14 @@ import { AlertTriangle, Check } from "lucide-react";
 import { parseImport } from "../lib/importParse.js";
 import { C, F, ui } from "../theme.js";
 
+// ESPN and Sleeper are left out on purpose: both auto-refresh via the
+// Refresh button, so pasting them in by hand is never the normal path.
+// NFFC is left out too — nobody's used it; add it back here (and to
+// MARKET_KEYS in App.jsx) if a league ever starts pricing off it.
 const MARKET_FIELDS = [
-  { key: "projected", label: "sheet value (drives the model when there are no projections)" },
-  { key: "espn", label: "ESPN market" },
-  { key: "yahoo", label: "Yahoo market" },
-  { key: "nffc", label: "NFFC market" },
-  { key: "sleeper", label: "Sleeper market" },
-  { key: "fantasypros", label: "FantasyPros market (0.5 PPR calculator)" },
+  { key: "projected", label: "sheet value — feeds the model for anyone with no projections yet, not a market price" },
+  { key: "yahoo", label: "Yahoo market — Avg $, what drafters actually paid" },
+  { key: "fantasypros", label: "FantasyPros' FP $ — the board's calibrated source of truth; Model Edge and Site Edge are both measured against this" },
 ];
 
 export function ago(iso) {
@@ -56,9 +57,10 @@ export default function DataPanel({ meta, importOpen, onImport }) {
             <br />
             <b style={{ color: C.bone }}>Yahoo:</b> open{" "}
             <span style={{ fontFamily: F.mono, fontSize: 11 }}>
-              football.fantasysports.yahoo.com/f1/draftanalysis?type=salcap
+              football.fantasysports.yahoo.com/f1/draftanalysis?type=salcap&pos=ALL&count=300
             </span>
-            , select the table, copy, paste here. Its one-cell-per-line layout is
+            {" "}(count=300 shows the full player pool instead of the default ~25),
+            select the table, copy, paste here. Its one-cell-per-line layout is
             handled, and <b style={{ color: C.bone }}>Avg $</b> (what people
             actually paid) is used rather than Yahoo's projected value.
           </div>

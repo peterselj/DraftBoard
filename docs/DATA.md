@@ -58,9 +58,12 @@ position and the dollar figure, and tolerates a header row or none.
 Choose which column the values land in:
 
 - `projected` — the standalone sheet value, used as the model value for players
-  we have no projections for.
-- `espn` / `yahoo` / `nffc` / `sleeper` — market columns, averaged into
-  **Market $**.
+  we have no projections for. Not a market price, so it isn't averaged in below.
+- `yahoo` / `fantasypros` — market columns. ESPN and Sleeper auto-refresh via
+  **Refresh** already, so they aren't offered here; NFFC has no source and
+  nobody's used it, so it's dropped from the dropdown too — both are still
+  valid fields (`MARKET_KEYS` in `App.jsx`), just add them back to
+  `MARKET_FIELDS` in `components/DataPanel.jsx` if a league starts needing them.
 
 Names are matched ignoring punctuation and suffixes, so `Marvin Harrison`
 finds `Marvin Harrison Jr.` and `A.J. Brown` matches `AJ Brown`. Anything
