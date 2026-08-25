@@ -15,6 +15,7 @@ import { loadDraft, saveDraft, clearDraft } from "./lib/storage.js";
 import {
   roomKey, roomFromUrl, setUrlRoom, upsertRoom, adoptLegacyDraft,
 } from "./lib/rooms.js";
+import { createLiveSync } from "./lib/liveSync.js";
 import RoomPicker from "./components/RoomPicker.jsx";
 import { C, F, ui, money } from "./theme.js";
 import ConfirmDialog from "./components/ConfirmDialog.jsx";
@@ -76,11 +77,30 @@ function Board({ room, onLeave }) {
   const [toast, setToast] = useState(null);
   const [dataMeta, setDataMeta] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [liveSyncOn, setLiveSyncOn] = useState(false);
 
   const quickRef = useRef(null);
   const searchRef = useRef(null);
   const saveTimer = useRef(null);
   const toastTimer = useRef(null);
+  const syncRef = useRef(null);
+
+  // ---- live sync (optional) -------------------------------------------------
+  // Mirrors this room to Firebase Realtime Database when lib/firebaseConfig.js
+  // is filled in, so a second person on the same room URL sees updates as they
+  // happen. Inert otherwise — see lib/liveSync.js.
+  useEffect(() => {
+    const sync = createLiveSync(room, (remote) => {
+      if (remote.settings) setSettings({ scoring: DEFAULT_SCORING, ...remote.settings });
+      if (remote.teams) setTeams(remote.teams);
+      if (remote.players) setPlayers(remote.players);
+      if (remote.picks) setPicks(remote.picks);
+      if (remote.dataMeta) setDataMeta(remote.dataMeta);
+    });
+    syncRef.current = sync;
+    setLiveSyncOn(sync.live);
+    return () => sync.stop();
+  }, [room]);
 
   // ---- persistence ---------------------------------------------------------
   useEffect(() => {
@@ -133,6 +153,7 @@ function Board({ room, onLeave }) {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       saveDraft(roomKey(room), { settings, teams, players, picks, dataMeta });
+      syncRef.current?.push({ settings, teams, players, picks, dataMeta });
       // Keep the room list's summary line honest.
       upsertRoom(room, { picks: picks.length });
     }, 400);
@@ -529,6 +550,11 @@ function Board({ room, onLeave }) {
           </button>
         </h1>
         <div style={styles.headerBtns}>
+          {liveSyncOn && (
+            <span style={styles.liveDot} title="Syncing live with anyone else on this room">
+              ● live
+            </span>
+          )}
           <span style={styles.dataStatus}>
             <b style={{ color: C.bone }}>{dataMeta?.season ?? "—"} values</b>
             {dataMeta?.origin ? ` · ${dataMeta.origin}` : ""}
@@ -748,6 +774,7 @@ const styles = {
   },
   headerBtns: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" },
   dataStatus: { fontSize: 11, color: C.dimmer, marginRight: 4 },
+  liveDot: { fontSize: 11, color: C.tealLt, marginRight: 8, fontFamily: F.mono },
   headerDivider: { width: 1, alignSelf: "stretch", background: C.line, margin: "0 2px" },
   gaugeRow: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 },
   addRow: { ...ui.panel, display: "flex", gap: 8, alignItems: "center", padding: 10, marginBottom: 10 },

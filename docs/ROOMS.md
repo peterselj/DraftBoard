@@ -41,9 +41,39 @@ anything. Nothing sensitive should go in a room beyond league names.
 ## Moving a room between machines
 
 **Export** on the picker downloads `draft-board-<room>.json` — the entire room:
-settings, managers, pool and picks. **Import a room file** on another machine
-restores it under the same name. That's also the way to back up a room before a
-draft, which costs nothing and occasionally saves an evening.
+settings, managers, pool and picks. There's no in-app import UI (removed as
+unneeded), but `importRoom` in `src/lib/rooms.js` still restores an export
+under the same name if it's ever needed — from the browser console, or wire a
+button back in. Export is also a cheap way to back up a room before a draft.
+
+## Live rooms (optional)
+
+A room can sync live across browsers/devices instead of staying local-only —
+so two people watching the same draft see the same board update in real time.
+This is opt-in at the project level: fill in `src/lib/firebaseConfig.js` with
+a Firebase Realtime Database config and every room becomes live automatically;
+leave it blank and nothing here changes.
+
+**How it works:** `src/lib/liveSync.js` mirrors a room's full state
+(`settings`, `teams`, `players`, `picks`, `dataMeta`) to
+`rooms/<code>` in Realtime Database on every save (same 400ms debounce as the
+local save), and applies incoming changes from anyone else on that room. A
+small "● live" indicator appears next to the data status in the header when
+it's active. Same pattern as the [showdown](https://github.com/peterselj/showdown)
+project's `js/sync.js` — a per-room ref, a `value` listener, last-write-wins.
+
+**Security model:** no login — the room code is the password. `database.rules.json`
+at the repo root (published in the Firebase console, not deployed by CI) scopes
+reads and writes to `/rooms/<code>` and rejects anything at the database root,
+so rooms can't be listed or guessed by scanning. Unlike showdown's rules, there's
+no per-field shape validation here — the draft state is a large, evolving
+shape (hundreds of players, schema-versioned in `storage.js`) that isn't worth
+hand-validating field by field for two private drafts. Anyone with the code can
+overwrite the room; that's an acceptable trade for a link shared with two
+people you trust.
+
+**Setup** is one-time, in the Firebase console, not something CI does — see the
+project README or ask for the walkthrough.
 
 ## Upgrading from a single-draft board
 

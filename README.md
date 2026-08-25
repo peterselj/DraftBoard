@@ -132,6 +132,33 @@ One board, several leagues. Type a room name on the way in — `retrocade`,
 is uploaded, so anyone else opening the site just gets an empty board. See
 [docs/ROOMS.md](docs/ROOMS.md).
 
+### Live rooms (optional, ~5 minutes to set up)
+
+A room can sync live across devices — so someone watching on their phone sees
+the same board as whoever's running the draft — via Firebase's free tier, same
+pattern as the [showdown](https://github.com/peterselj/showdown) project:
+
+1. <https://console.firebase.google.com> → **Add project** (any name, e.g.
+   `draft-board-sync`; Analytics off is fine).
+2. **Build → Realtime Database → Create Database** → a US region → start in
+   **test mode**.
+3. **Project settings (gear) → Your apps → Web (`</>`)** → register the app (no
+   Hosting needed).
+4. Copy the `firebaseConfig` object into [`src/lib/firebaseConfig.js`](src/lib/firebaseConfig.js),
+   replacing the blank fields. Include `databaseURL` — that's what turns live
+   sync on; it's on the Realtime Database page, like
+   `https://draft-board-sync-default-rtdb.firebaseio.com`.
+5. **Realtime Database → Rules** → replace the test-mode rules with
+   [`database.rules.json`](database.rules.json) → **Publish**. Test-mode rules
+   expire 30 days after the database is created and sync silently stops, so do
+   this before then.
+6. Commit and push; GitHub Pages serves the rest. `npm run dev` locally works
+   the same way once the config is filled in.
+
+Leave `firebaseConfig.js` blank and nothing changes — every room stays
+local-only, exactly as before. Details and the security model:
+[docs/ROOMS.md](docs/ROOMS.md).
+
 ## Data
 
 Values refresh from live sources with the **Refresh** button — no rebuild, no

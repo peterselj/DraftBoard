@@ -1,6 +1,6 @@
-import React, { useRef, useState } from "react";
-import { DoorOpen, Trash2, Download, Upload, Plus } from "lucide-react";
-import { listRooms, normalizeCode, exportRoom, importRoom, deleteRoom } from "../lib/rooms.js";
+import React, { useState } from "react";
+import { DoorOpen, Trash2, Download, Plus } from "lucide-react";
+import { listRooms, normalizeCode, exportRoom, deleteRoom } from "../lib/rooms.js";
 import { C, F, ui } from "../theme.js";
 
 const ago = (ts) => {
@@ -19,7 +19,6 @@ export default function RoomPicker({ onEnter }) {
   const [rooms, setRooms] = useState(listRooms);
   const [code, setCode] = useState("");
   const [error, setError] = useState(null);
-  const fileRef = useRef(null);
 
   const clean = normalizeCode(code);
 
@@ -36,17 +35,6 @@ export default function RoomPicker({ onEnter }) {
     a.download = `draft-board-${c}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-  };
-
-  const doImport = async (file) => {
-    try {
-      const c = importRoom(await file.text());
-      setRooms(listRooms());
-      setError(null);
-      onEnter(c);
-    } catch (e) {
-      setError(`Couldn't import that file: ${e.message}`);
-    }
   };
 
   return (
@@ -66,7 +54,7 @@ export default function RoomPicker({ onEnter }) {
         >
           <input
             style={styles.input}
-            placeholder="room name — e.g. retrocade"
+            placeholder="room name"
             value={code}
             autoFocus
             onChange={(e) => { setCode(e.target.value); setError(null); }}
@@ -112,16 +100,6 @@ export default function RoomPicker({ onEnter }) {
         )}
 
         <div style={styles.footer}>
-          <button style={styles.linkBtn} onClick={() => fileRef.current?.click()}>
-            <Upload size={13} /> import a room file
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json,.json"
-            style={{ display: "none" }}
-            onChange={(e) => e.target.files?.[0] && doImport(e.target.files[0])}
-          />
           <span style={styles.footNote}>
             Bookmark <span style={{ fontFamily: F.mono }}>#room=name</span> to jump straight in.
           </span>
@@ -162,10 +140,5 @@ const styles = {
     borderRadius: 5, padding: "8px 8px", cursor: "pointer", display: "flex",
   },
   footer: { display: "flex", alignItems: "center", gap: 12, marginTop: 18, flexWrap: "wrap" },
-  linkBtn: {
-    display: "flex", alignItems: "center", gap: 5, background: "none",
-    border: "1px dashed", borderColor: C.line2, color: C.dim,
-    fontSize: 11.5, padding: "6px 10px", borderRadius: 6, cursor: "pointer",
-  },
   footNote: { fontSize: 11, color: C.dimmer },
 };
