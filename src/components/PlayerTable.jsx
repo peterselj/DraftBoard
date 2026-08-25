@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { RotateCcw, Eye, EyeOff, Check } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { RotateCcw, EyeOff } from "lucide-react";
 import TeamPicker from "./TeamPicker.jsx";
 import { C, F, money } from "../theme.js";
 
@@ -8,8 +8,9 @@ const deltaColor = (d) => (d > 1 ? C.tealLt : d < -1 ? C.redLt : C.dim);
 const PLATFORM_LABEL = { espn: "ESPN", yahoo: "Yahoo", sleeper: "Sleeper", nffc: "NFFC" };
 
 // The three pasted/derived sources, stacked compact next to each other. Any
-// one of them can be picked (Settings → Value basis, or the check icon here)
-// as what Live $ and Site Edge are built from — see App.jsx's basisOf.
+// one of them can be picked (Settings → Value basis, or double-clicking its
+// header here) as what Live $ and Site Edge are built from — see App.jsx's
+// basisOf.
 const SRC_COLUMNS = [
   { key: "fp", short: "FP", valueKey: "fp", title: "FantasyPros' 0.5 PPR auction calculator, pasted in manually" },
   { key: "model", short: "JP", valueKey: "model", title: "Our own bottom-up value from projections, shaped to this league's exact roster" },
@@ -27,6 +28,30 @@ export default function PlayerTable({
   const showSite = platform !== "sleeper";
   const [visible, setVisible] = useState({ fp: true, model: true, etr: true });
   const toggleVisible = (key) => setVisible((v) => ({ ...v, [key]: !v[key] }));
+
+  // Double-click a source header to use it as the basis, triple-click to
+  // hide it — replaces an earlier hover-revealed eye/check icon pair that
+  // was unusable in practice: reaching for a target that only exists while
+  // hovered, positioned right where the next header's own hit-area begins,
+  // meant the icons routinely vanished (or the wrong header activated) on
+  // the way over. Click count is tracked per column with a short debounce
+  // rather than reading the DOM click event's own `detail` field, because
+  // detail fires the *double*-click action partway through every triple
+  // click (1, 2, then 3) — debouncing waits for the sequence to finish
+  // before deciding what happened, so a triple-click never briefly changes
+  // the basis on its way to hiding the column.
+  const clickState = useRef({});
+  const handleHeaderClick = (key) => {
+    const state = clickState.current[key] || { count: 0, timer: null };
+    state.count += 1;
+    clearTimeout(state.timer);
+    state.timer = setTimeout(() => {
+      if (state.count === 2) onSelectBasis?.(key);
+      else if (state.count >= 3) toggleVisible(key);
+      state.count = 0;
+    }, 350);
+    clickState.current[key] = state;
+  };
 
   // Player+Pos / FP+JP+ETR / Site+SiteEdge / Live $ / Draft read as five
   // clusters, not nine ordinary columns — a spacer column sits between each
@@ -46,52 +71,23 @@ export default function PlayerTable({
             {SRC_COLUMNS.map((c) => (
               <th
                 key={c.key}
-                className="src-head"
                 style={{
                   ...styles.thNum,
                   ...styles.thTight,
+                  ...styles.thClickable,
                   ...(visible[c.key] ? null : styles.thSrcHidden),
                 }}
-                title={c.title}
+                onClick={() => handleHeaderClick(c.key)}
+                title={
+                  visible[c.key]
+                    ? `${c.title}. Double-click to use as the Live $ basis, triple-click to hide.`
+                    : `${c.short} $ is hidden. Triple-click to show it again.`
+                }
               >
                 {visible[c.key] ? (
-                  // The label text is the only thing that actually sits in
-                  // flow — it's what needs to line up with the right-aligned
-                  // numbers below. The eye/check controls are positioned
-                  // absolutely on top instead of sitting inline next to it:
-                  // inline, even hidden at opacity 0, they still take up
-                  // width and would push the visible label left of where
-                  // the data lines up.
-                  <>
-                    <span style={{ color: basisSource === c.key ? C.gold : C.dim }}>{c.short} $</span>
-                    <span className="src-ctrls" style={styles.srcCtrls}>
-                      <button
-                        type="button"
-                        style={styles.srcIconBtn}
-                        onClick={() => toggleVisible(c.key)}
-                        title={`Hide ${c.short} $`}
-                      >
-                        <Eye size={11} />
-                      </button>
-                      <button
-                        type="button"
-                        style={styles.srcIconBtn}
-                        onClick={() => onSelectBasis?.(c.key)}
-                        title={`Use ${c.short} $ as the Live $ basis`}
-                      >
-                        <Check size={11} color={basisSource === c.key ? C.gold : undefined} />
-                      </button>
-                    </span>
-                  </>
+                  <span style={{ color: basisSource === c.key ? C.gold : C.dim }}>{c.short} $</span>
                 ) : (
-                  <button
-                    type="button"
-                    style={styles.srcIconBtn}
-                    onClick={() => toggleVisible(c.key)}
-                    title={`Show ${c.short} $`}
-                  >
-                    <EyeOff size={12} />
-                  </button>
+                  <EyeOff size={12} color={C.dim} />
                 )}
               </th>
             ))}
@@ -310,35 +306,29 @@ const styles = {
   // draws its own borderBottom, so this renders the same either way.
   table: { width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: 780 },
   th: { ...headCell, textAlign: "left" },
-  thCenter: { ...headCell, textAlign: "center" },
-  thNum: { ...headCell, textAlign: "right" },
+  thCenter: { ...headCell, textAlign: "center", width: "1%", whiteSpace: "nowrap" },
+  // `width: "1%"` is the standard trick for an auto-layout table: with no
+  // width at all, a column can get handed a share of whatever space is left
+  // over once every column's own content is satisfied, and that leftover
+  // isn't necessarily split evenly — it's exactly why Site $/Site Edge sat
+  // further apart than FP $/JP $/ETR $ despite identical padding on both
+  // pairs. A tiny explicit width pins a column to its true content width, so
+  // every dollar/edge column is pinned the same way, and Player (the one
+  // column that should actually stretch) absorbs the leftover instead.
+  thNum: { ...headCell, textAlign: "right", width: "1%", whiteSpace: "nowrap" },
   // Applied to both bundles — FP $/JP $/ETR $ and Site $/Site Edge — so each
   // reads as one tight block. The gap columns (much wider) are what separate
   // the blocks from each other; this is what keeps a block's own columns
   // close together instead of spread as far apart as the blocks are.
   thTight: { padding: "9px 4px" },
   thSrcHidden: { padding: "9px 3px", textAlign: "center" },
+  thClickable: { cursor: "pointer", userSelect: "none" },
   thGap: { ...headCell, width: 26, padding: 0 },
   // A little wider than the other gaps — Live $ is the one number worth
   // singling out, so it gets more air on both sides than the bundles do.
   thGapWide: { ...headCell, width: 34, padding: 0 },
   thLive: { color: C.gold, textAlign: "center" },
   thDraft: { ...headCell, textAlign: "right", minWidth: 250 },
-  // Positioned outside the header's own box (to the right of it, floating
-  // over the gap column) rather than inline next to the label — inline, even
-  // hidden at opacity 0, the icons would still take up width and push the
-  // visible label left of where the right-aligned data actually lines up.
-  // Opacity itself is set by the `.src-ctrls` / `.src-head:hover .src-ctrls`
-  // rules in App.jsx's GlobalStyle, not here: an inline style always wins
-  // over a class rule, which would make the CSS :hover toggle a no-op.
-  srcCtrls: {
-    position: "absolute", left: "100%", top: "50%", transform: "translateY(-50%)",
-    marginLeft: 3, display: "inline-flex", gap: 2, zIndex: 20,
-  },
-  srcIconBtn: {
-    background: "none", border: "none", color: C.dim, cursor: "pointer",
-    padding: 1, display: "inline-flex", lineHeight: 0,
-  },
   td: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5 },
   tdCenter: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, textAlign: "center" },
   tdName: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" },
