@@ -37,7 +37,7 @@ export default function PlayerTable({
         <thead>
           <tr>
             <th style={styles.th}>Player</th>
-            <th style={styles.th}>Pos</th>
+            <th style={styles.thCenter}>Pos</th>
             {SRC_COLUMNS.map((c) => (
               <th
                 key={c.key}
@@ -150,7 +150,7 @@ function Row({ p, teams, myTeamId, input, setDraftInput, onDraft, onUndraft, max
   return (
     <tr style={{ opacity: p.drafted ? 0.5 : 1, background: mine ? "rgba(216,166,61,0.07)" : "transparent" }}>
       <td style={styles.tdName}>{p.name}</td>
-      <td style={styles.td}><span style={styles.posPill}>{p.pos}</span></td>
+      <td style={styles.tdCenter}><span style={styles.posPill}>{p.pos}</span></td>
       {SRC_COLUMNS.map((c) => (
         <td key={c.key} style={{ ...styles.tdNum, ...styles.tdSrc }}>
           {visible[c.key] && (
@@ -293,13 +293,14 @@ const styles = {
   // draws its own borderBottom, so this renders the same either way.
   table: { width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: 780 },
   th: { ...headCell, textAlign: "left" },
+  thCenter: { ...headCell, textAlign: "center" },
   thNum: { ...headCell, textAlign: "right" },
   // The FP $ / JP $ / ETR $ stack: tight padding so the three sit close
   // together, reading as one compact block rather than three ordinary columns.
   thSrc: { padding: "9px 6px" },
   thSrcHidden: { padding: "9px 3px", textAlign: "center" },
   thGap: { ...headCell, width: 18, padding: 0 },
-  thLive: { color: C.gold },
+  thLive: { color: C.gold, textAlign: "center" },
   thDraft: { ...headCell, textAlign: "right", minWidth: 250 },
   srcHeadInner: { display: "inline-flex", alignItems: "center", gap: 4 },
   // Hidden until the header is hovered — opacity is set by the `.src-ctrls` /
@@ -313,13 +314,14 @@ const styles = {
     padding: 1, display: "inline-flex", lineHeight: 0,
   },
   td: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5 },
+  tdCenter: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, textAlign: "center" },
   tdName: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" },
   tdNum: { padding: "7px 12px", borderBottom: `1px solid #1c261f`, fontSize: 12.5, textAlign: "right", fontFamily: F.mono },
   tdSrc: { padding: "7px 6px" },
   tdGap: { padding: 0, width: 18, borderBottom: `1px solid #1c261f` },
-  tdLive: { padding: "7px 14px" },
+  tdLive: { padding: "7px 14px", textAlign: "center" },
   tdDraft: { padding: "5px 12px", borderBottom: `1px solid #1c261f` },
-  liveCell: { display: "inline-flex", alignItems: "baseline", justifyContent: "flex-end" },
+  liveCell: { display: "inline-flex", alignItems: "baseline", justifyContent: "center" },
   liveFigure: { fontWeight: 700, fontSize: 15, color: C.gold },
   liveDelta: { fontSize: 10, width: 22, textAlign: "left", paddingLeft: 5, flex: "0 0 auto" },
   posPill: {
