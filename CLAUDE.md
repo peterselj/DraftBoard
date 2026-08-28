@@ -43,7 +43,7 @@ scripts/             — data refresh pipeline (sources/ + refresh.mjs)
 
 ## Value basis (important)
 
-Three prices exist per player, and they answer different questions rather than competing
+Four prices exist per player, and they answer different questions rather than competing
 for the same one:
 
 - **`JP $`** (`p.model` / `baseValueOf`) — our own bottom-up figure, derived from projected
@@ -54,15 +54,22 @@ for the same one:
   league's.
 - **`ETR $`** (`p.etr`) — Establish The Run's values, pasted in by hand. Another external
   reference, same role as FP $.
+- **`FDV $`** (`fdvValues`, computed) — [First Down Studio](https://www.firstdown.studio/season-rankings)'s
+  Vegas-prop-derived fantasy points (`p.fdvPoints`, pasted in by hand), run through *our own*
+  bottom-up model rather than trusted as a dollar figure directly — FDS publishes points, not
+  auction money, so it's a rival projection input for the same VORP math JP $ uses, not a peer
+  to FP $/ETR $'s pasted dollars. See `docs/DATA.md` for where the numbers come from and the
+  half-PPR-only caveat.
 - **`site $`** — published AAV from whichever platform the league drafts on (Settings →
   Drafting on). What's actually on the room's screen — a market-price fact, not a valuation.
 
-**One of FP $ / JP $ / ETR $ is picked as *the basis*** — `Settings → Value basis`, or the
-check icon on a column header in `PlayerTable` — and everything else measures against
-*that* number instead of the three being compared to each other. `App.jsx`'s `basisOf(p)`
-resolves it: `model` always resolves to the bottom-up figure; `fp` / `etr` read the pasted
-field and fall back to `model` for anyone missing it, since budget inflation and scarcity
-need a number for every undrafted player to stay calibrated to the whole pot.
+**One of FP $ / JP $ / ETR $ / FDV $ is picked as *the basis*** — `Settings → Value basis`, or
+the check icon on a column header in `PlayerTable` — and everything else measures against
+*that* number instead of the four being compared to each other. `App.jsx`'s `basisOf(p)`
+resolves it: `model` and `fdv` always resolve to a computed figure (`fdv` falls back to the
+model value for anyone with no `fdvPoints` pasted); `fp` / `etr` read the pasted field and
+fall back to `model` for anyone missing it, since budget inflation and scarcity need a number
+for every undrafted player to stay calibrated to the whole pot.
 
 `siteEdge = basis − site$` is the one comparison that survives: positive means the room's
 published price is *below* whichever source is the basis — a bargain, "green is good".

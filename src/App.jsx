@@ -30,8 +30,9 @@ const freshPlayers = seedPlayers;
 
 const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper", "fantasypros", "etr"];
 
-// Which pasted-in field each basis source reads from. "model" has no field —
-// it's always the bottom-up figure itself, never a pasted number.
+// Which pasted-in field each basis source reads from. "model" and "fdv" have
+// no field — both are always a computed figure, never a pasted number (see
+// fdvValues below for what "computed" means for fdv specifically).
 const BASIS_FIELD = { fp: "fantasypros", etr: "etr" };
 
 // Single-letter position filters, same toggle behavior as clicking the pill.
@@ -176,24 +177,52 @@ function Board({ room, onLeave }) {
     [modelValues]
   );
 
-  // Which pasted-in source Live $ is built from — FP $, ETR $, or the model
-  // itself — is a choice made once in Settings (or from the column headers),
-  // not something juggled per player. Whichever one is chosen becomes *the*
-  // number: Site Edge and Live $ both measure against it, no more comparing
-  // three prices in your head. "model" always resolves; "fp"/"etr" fall back
-  // to the model value for anyone missing that pasted field, since budget
-  // inflation and scarcity (computeBaseline/computeLive) need a number for
-  // every undrafted player to stay calibrated to the whole pot, and neither
-  // FP $ nor ETR $ is ever pasted in for the whole pool.
+  // FDV $ — First Down Studio's Vegas-prop-derived fantasy points
+  // (fdvPoints, pasted in via Import), run through our own bottom-up model
+  // rather than used as a dollar figure directly. FDS publishes points, not
+  // auction dollars, so it isn't a pasted-$ source like FP $/ETR $ — it's a
+  // second projection input feeding the same VORP math JP $ uses.
+  //
+  // Only players with a pasted fdvPoints get their stats overridden; anyone
+  // without one keeps their normal projection, so the model still has a full
+  // pool to compute starter/bench baselines from even when FDS's table (or
+  // what got pasted from it) doesn't cover the whole league. That mirrors how
+  // projectedPoints() already treats a single pts_half_ppr total for K/DEF —
+  // same caveat applies here: it's fixed at FDS's own half-PPR figure,
+  // regardless of this league's actual scoring settings.
+  const fdvPool = useMemo(
+    () => players.map((p) =>
+      typeof p.fdvPoints === "number" && p.fdvPoints > 0
+        ? { ...p, stats: { pts_half_ppr: p.fdvPoints } }
+        : p
+    ),
+    [players]
+  );
+  const fdvValues = useMemo(
+    () => computeModelValues(fdvPool, settings).values,
+    [fdvPool, settings]
+  );
+
+  // Which source Live $ is built from — FP $, ETR $, JP $, or FDV $ — is a
+  // choice made once in Settings (or from the column headers), not something
+  // juggled per player. Whichever one is chosen becomes *the* number: Site
+  // Edge and Live $ both measure against it, no more comparing four prices in
+  // your head. "model" and "fdv" always resolve (fdv falls back to the model
+  // value for anyone with no fdvPoints pasted); "fp"/"etr" fall back to the
+  // model value for anyone missing that pasted field, since budget inflation
+  // and scarcity (computeBaseline/computeLive) need a number for every
+  // undrafted player to stay calibrated to the whole pot, and none of FP $,
+  // ETR $, or FDV $ is ever pasted in for the whole pool.
   const basisSource = settings.basisSource || "fp";
   const basisOf = useCallback(
     (p) => {
       if (basisSource === "model") return baseValueOf(p);
+      if (basisSource === "fdv") return fdvValues.get(p.id) ?? baseValueOf(p);
       const field = BASIS_FIELD[basisSource];
       const raw = p[field];
       return typeof raw === "number" && raw > 0 ? raw : baseValueOf(p);
     },
-    [baseValueOf, basisSource]
+    [baseValueOf, basisSource, fdvValues]
   );
 
   // The scarcity baseline is derived from the *whole* pool — drafted players
@@ -228,6 +257,11 @@ function Board({ room, onLeave }) {
       const model = baseValueOf(p);
       const fp = typeof p.fantasypros === "number" && p.fantasypros > 0 ? p.fantasypros : null;
       const etr = typeof p.etr === "number" && p.etr > 0 ? p.etr : null;
+      // Unlike fp/etr, a missing fdvPoints doesn't mean "no FDV $" — it means
+      // "this player scores off his normal projection inside the FDV run,"
+      // which is still a real (if less-differentiated) VORP figure. Only
+      // genuinely hide the cell when he isn't in the pool at all.
+      const fdv = fdvValues.get(p.id) ?? null;
       const consensus = marketValue(p);
       const site = siteValue(p, platform);
       const basis = basisOf(p);
@@ -235,6 +269,7 @@ function Board({ room, onLeave }) {
         model,
         fp,
         etr,
+        fdv,
         site,
         consensus,
         // Site Edge is the one comparison that still matters once a basis is
@@ -251,7 +286,7 @@ function Board({ room, onLeave }) {
         live: adjustedValue(p, live, basis),
       };
     },
-    [live, baseValueOf, basisOf, platform]
+    [live, baseValueOf, basisOf, platform, fdvValues]
   );
 
   const effectivePos = useMemo(() => {
@@ -720,7 +755,7 @@ function Board({ room, onLeave }) {
         <b style={{ color: C.bone }}>h</b> hide drafted · <b style={{ color: C.bone }}>q r w t k d</b> filter
         position · <b style={{ color: C.bone }}>f</b> flex · <b style={{ color: C.bone }}>a</b> all
         <div style={{ marginTop: 4 }}>
-          <b style={{ color: C.bone }}>double-click</b> a FP $/JP $/ETR $ header to use it as the Live $ basis ·{" "}
+          <b style={{ color: C.bone }}>double-click</b> a FP $/JP $/ETR $/FDV $ header to use it as the Live $ basis ·{" "}
           <b style={{ color: C.bone }}>triple-click</b> a header to hide (or restore) that column
         </div>
       </div>

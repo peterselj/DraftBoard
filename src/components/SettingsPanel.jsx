@@ -28,6 +28,7 @@ const BASES = [
   { key: "fp", label: "FP $", note: "FantasyPros' 0.5 PPR calculator — real, externally calibrated money" },
   { key: "model", label: "JP $", note: "our own bottom-up figure, shaped to this league's exact roster" },
   { key: "etr", label: "ETR $", note: "Establish The Run's values" },
+  { key: "fdv", label: "FDV $", note: "First Down Studio's Vegas-prop-derived points, run through our own bottom-up model" },
 ];
 
 export default function SettingsPanel({

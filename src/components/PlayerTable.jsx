@@ -7,7 +7,7 @@ const deltaColor = (d) => (d > 1 ? C.tealLt : d < -1 ? C.redLt : C.dim);
 
 const PLATFORM_LABEL = { espn: "ESPN", yahoo: "Yahoo", sleeper: "Sleeper", nffc: "NFFC" };
 
-// The three pasted/derived sources, stacked compact next to each other. Any
+// The four pasted/derived sources, stacked compact next to each other. Any
 // one of them can be picked (Settings → Value basis, or double-clicking its
 // header here) as what Live $ and Site Edge are built from — see App.jsx's
 // basisOf.
@@ -15,7 +15,9 @@ const SRC_COLUMNS = [
   { key: "fp", short: "FP", valueKey: "fp", title: "FantasyPros' 0.5 PPR auction calculator, pasted in manually" },
   { key: "model", short: "JP", valueKey: "model", title: "Our own bottom-up value from projections, shaped to this league's exact roster" },
   { key: "etr", short: "ETR", valueKey: "etr", title: "Establish The Run's values, pasted in manually" },
+  { key: "fdv", short: "FDV", valueKey: "fdv", title: "First Down Studio's Vegas-prop-derived points, run through our own bottom-up model" },
 ];
+const SRC_LABEL = Object.fromEntries(SRC_COLUMNS.map((c) => [c.key, c.short]));
 
 export default function PlayerTable({
   rows, teams, myTeamId, draftInputs, setDraftInput, onDraft, onUndraft, maxBidFor,
@@ -26,7 +28,7 @@ export default function PlayerTable({
   // for it would just be a blank column, so it (and the edge that depends on
   // it) drops out entirely rather than sitting there empty.
   const showSite = platform !== "sleeper";
-  const [visible, setVisible] = useState({ fp: true, model: true, etr: true });
+  const [visible, setVisible] = useState({ fp: true, model: true, etr: true, fdv: true });
   const toggleVisible = (key) => setVisible((v) => ({ ...v, [key]: !v[key] }));
 
   // Double-click a source header to use it as the basis, triple-click to
@@ -102,7 +104,7 @@ export default function PlayerTable({
                 </th>
                 <th
                   style={{ ...styles.thNum, ...styles.thTight }}
-                  title={`Site Edge — basis (${basisSource === "model" ? "JP" : basisSource === "etr" ? "ETR" : "FP"} $) minus ${siteLabel}: positive means ${siteLabel} is pricing him below what we think he's worth — a bargain. Shortened to "Edge" here so it doesn't force this column wider than ${siteLabel} $ needs, which was pushing the two apart.`}
+                  title={`Site Edge — basis (${SRC_LABEL[basisSource] || "FP"} $) minus ${siteLabel}: positive means ${siteLabel} is pricing him below what we think he's worth — a bargain. Shortened to "Edge" here so it doesn't force this column wider than ${siteLabel} $ needs, which was pushing the two apart.`}
                 >
                   Edge
                 </th>
