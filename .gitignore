@@ -1,5 +1,6 @@
 node_modules
 dist
+scripts/prototypes/out
 .DS_Store
 *.local
 .env
