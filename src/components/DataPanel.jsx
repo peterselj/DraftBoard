@@ -12,6 +12,7 @@ const MARKET_FIELDS = [
   { key: "yahoo", short: "yahoo", label: "Yahoo market — Avg $, what drafters actually paid" },
   { key: "fantasypros", short: "FP $", label: "FantasyPros' FP $ — one of the selectable Live $ bases (Settings → Value basis)" },
   { key: "etr", short: "ETR $", label: "Establish The Run's values — another selectable Live $ basis" },
+  { key: "fdvPoints", short: "FDV pts", label: "First Down Studio's season-rankings Pts column (firstdown.studio) — Vegas-prop-derived fantasy points, run through our own model to become the FDV $ basis. Paste their half-PPR Pts, not a dollar figure." },
 ];
 
 export function ago(iso) {
@@ -110,7 +111,7 @@ export default function DataPanel({ meta, importOpen, onImport }) {
               )}
               {preview.rows.slice(0, 3).map((r, i) => (
                 <span key={i} style={styles.previewChip}>
-                  {r.name}{r.pos ? ` · ${r.pos}` : ""} · ${r.value}
+                  {r.name}{r.pos ? ` · ${r.pos}` : ""} · {field === "fdvPoints" ? `${r.value} pts` : `$${r.value}`}
                 </span>
               ))}
               {preview.rows.length > 3 && <span style={styles.previewChip}>+{preview.rows.length - 3} more</span>}

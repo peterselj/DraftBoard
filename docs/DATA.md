@@ -64,6 +64,15 @@ Choose which column the values land in:
   nobody's used it, so it's dropped from the dropdown too — all three are still
   valid fields (`MARKET_KEYS` in `App.jsx`), just add them back to
   `MARKET_FIELDS` in `components/DataPanel.jsx` if a league starts needing them.
+- `fdvPoints` — [First Down Studio's season rankings](https://www.firstdown.studio/season-rankings)
+  (`Pts` column, one position tab at a time), a rival fantasy-points projection
+  built off Vegas season-long player props rather than a dollar figure. It
+  isn't averaged into the market consensus either — it feeds **FDV $**
+  (Settings → Value basis), which runs it through our own bottoms-up model the
+  same way JP $ runs Sleeper's projections through it, rather than trusting it
+  as an already-priced number. Their number is fixed at their own half-PPR
+  scoring regardless of this league's settings — same caveat as the K/DEF
+  pre-scored fallback in `scoring.js`.
 
 Names are matched ignoring punctuation and suffixes, so `Marvin Harrison`
 finds `Marvin Harrison Jr.` and `A.J. Brown` matches `AJ Brown`. Anything
