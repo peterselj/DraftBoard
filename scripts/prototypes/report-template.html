@@ -104,13 +104,28 @@
   .delta.down { color: var(--down); }
   .finding-body p { margin: 3px 0 0; color: var(--ink-muted); font-size: 14px; }
 
-  .callout {
-    background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-ink);
-    border-radius: 12px; padding: 16px 20px; font-size: 13.5px; display: flex; gap: 12px; align-items: flex-start;
-  }
+  .callout { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-ink); border-radius: 12px; padding: 16px 20px; font-size: 13.5px; display: flex; gap: 12px; align-items: flex-start; }
   .callout .mark { font-family: "IBM Plex Mono", monospace; font-weight: 600; flex-shrink: 0; }
   .callout p { margin: 0; line-height: 1.6; }
   .callout b { font-weight: 600; }
+
+  /* Beta control */
+  .beta-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px 26px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px;
+  }
+  .beta-panel h2 { font-size: 17px; }
+  .beta-panel .explain { color: var(--ink-muted); font-size: 14px; margin: 0; max-width: 68ch; }
+  .beta-row { display: flex; align-items: center; gap: 16px; }
+  .beta-row input[type="range"] {
+    flex: 1; accent-color: var(--accent); height: 4px; cursor: pointer;
+  }
+  .beta-readout {
+    font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 8px;
+    padding: 6px 12px; white-space: nowrap; min-width: 156px; text-align: center;
+  }
+  .beta-labels { display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-faint); }
 
   .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
   table { border-collapse: collapse; width: 100%; min-width: 640px; }
@@ -123,14 +138,15 @@
   tbody td { padding: 8px 14px; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; vertical-align: middle; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:nth-child(even) { background: var(--surface-2); }
-  tbody tr.thin { opacity: 0.55; }
+  tbody tr.no-signal { opacity: 0.5; }
   td.rank { font-family: "IBM Plex Mono", monospace; color: var(--ink-faint); font-size: 12px; }
   td.player { font-weight: 500; }
-  .thin-tag { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--ink-faint); margin-left: 6px; font-weight: 400; }
+  .no-signal-note { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-faint); font-weight: 400; }
   td.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
   td.jp { color: var(--accent); }
   td.mkt { color: var(--market); }
   td.delta { font-weight: 600; }
+  td.dash { color: var(--ink-faint); font-family: "IBM Plex Mono", monospace; }
 
   .bars { display: flex; flex-direction: column; gap: 3px; width: 120px; }
   .bar-track { position: relative; height: 6px; background: var(--border-soft); border-radius: 3px; overflow: hidden; }
@@ -144,7 +160,6 @@
   .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-muted); align-items: center; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-  .swatch.thin-demo { background: var(--ink-faint); opacity: 0.55; }
 
   section.pos { display: flex; flex-direction: column; gap: 12px; }
 
@@ -159,6 +174,7 @@
   @media (max-width: 560px) {
     .page { padding: 36px 16px 72px; }
     .bars { display: none; }
+    .beta-row { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -170,10 +186,11 @@
     <h1>Does Vegas disagree with the model?</h1>
     <p class="dek">
       Polymarket runs a season-long "who leads fantasy points at each position" market for
-      2026&#8211;27 &mdash; a live field of real-money probabilities, priced months before Week&nbsp;1.
-      This reallocates the same JP&nbsp;$ pool our bottoms-up model already assigns to each
-      position, in the market's proportions instead of VORP, to see where real money and the
-      model actually disagree.
+      2026&#8211;27. This page turns that into a dollar comparison against JP&nbsp;$, our
+      bottoms-up model &mdash; but only for the handful of players per position anyone has
+      actually traded, and using math that doesn't overstate what a betting favorite implies
+      about point production. <b>Rebuilt version</b> &mdash; the first pass had two real bugs;
+      see the callout below.
     </p>
     <div class="meta-row">
       <span class="chip">Snapshot <b>__SNAPSHOT_DATE__</b></span>
@@ -182,87 +199,103 @@
     </div>
   </header>
 
+  <div class="callout">
+    <span class="mark">&#9888;</span>
+    <p>
+      <b>What changed from the first version:</b> it redistributed each position's dollar pool
+      in direct proportion to raw win-probability, which implied things like "Vegas expects
+      Gibbs to outscore McCaffrey 4-to-1" &mdash; nonsense; our own projections have them 17%
+      apart. Win-probability in a big field is a <em>logarithmic</em> function of the underlying
+      stat line, not a linear one (think horse racing: a modest real speed edge can still make a
+      horse a heavy favorite, because only the fastest one on the day wins). This version inverts
+      that properly, and it only prices players with a real, currently-quoted bid &mdash; an
+      untraded contract isn't "5% conviction," it's no information at all, and got assigned a
+      market figure anyway last time (a backup, Isiah Pacheco, priced above Jonathan Taylor).
+      Full explanation in Method &amp; caveats below.
+    </p>
+  </div>
+
+  <div class="beta-panel">
+    <h2>How much would a real points edge move the odds?</h2>
+    <p class="explain">
+      That's the one real assumption this whole page rests on, and it's genuinely uncertain, so
+      it's a dial instead of a fixed number. A tighter assumption (left) says even small point
+      gaps swing win-probability a lot, so a big betting favorite implies only a small real edge.
+      A looser assumption (right) says it takes a bigger points edge to move the odds this much.
+      Drag it &mdash; every number below updates live.
+    </p>
+    <div class="beta-row">
+      <input type="range" id="beta-slider" min="15" max="80" value="30" step="1">
+      <span class="beta-readout" id="beta-readout">&beta; = 30 pts</span>
+    </div>
+    <div class="beta-labels"><span>tighter &mdash; favorites imply less</span><span>looser &mdash; favorites imply more</span></div>
+  </div>
+
   <div class="findings">
-    <h2>What actually moved</h2>
+    <h2>What actually moved (at &beta;=30)</h2>
     <ol class="finding-list">
       <li>
         <span class="finding-num">01</span>
         <div class="finding-body">
-          <b class="name">Jahmyr Gibbs</b> is the single biggest disagreement in the dataset:
-          JP&nbsp;$64 vs. a market-implied <b>$120</b> &mdash;
-          <span class="delta up">+$56</span>. His own contract is genuinely, currently quoted at
-          21&#162;&ndash;43&#162; (not a stub) &mdash; real money thinks he's a much clearer RB1
-          than our VORP curve credits him for.
+          <b class="name">Jaxon Smith-Njigba</b> and <b class="name">Amon-Ra St. Brown</b> carry
+          the biggest real gaps in the whole dataset: <span class="delta up">+$6</span> and
+          <span class="delta up">+$7</span> over JP $. The market rates both meaningfully closer
+          to Puka Nacua, its WR favorite, than our model does.
         </div>
       </li>
       <li>
         <span class="finding-num">02</span>
         <div class="finding-body">
-          The market is more convicted on the very top of the WR pool across the board:
-          <b class="name">Puka Nacua</b> <span class="delta up">+$39</span>,
-          <b class="name">Jaxon Smith-Njigba</b> <span class="delta up">+$34</span>,
-          <b class="name">Amon-Ra&nbsp;St.&nbsp;Brown</b> <span class="delta up">+$24</span>.
-          Our model treats WR1&ndash;WR4 as a fairly even tier; the market sees real separation.
+          At tight end, it flips our framing entirely: <b class="name">Brock Bowers</b> comes out
+          <span class="delta down">&minus;$8</span>, the largest single disagreement found once
+          the correction is applied &mdash; the market's actual TE favorite is
+          <b class="name">Trey McBride</b>, not Bowers.
         </div>
       </li>
       <li>
         <span class="finding-num">03</span>
         <div class="finding-body">
-          <b class="name">Jonathan Taylor</b> and <b class="name">Derrick Henry</b> go the other
-          way, hard: our #4 and #5 RBs by JP&nbsp;$ get priced by the market near the RB pool's
-          floor &mdash; <span class="delta down">&minus;$36</span> and
-          <span class="delta down">&minus;$25</span>. Bettors are pricing in age/workload
-          regression a season-total projection doesn't see coming.
+          Everywhere else, the gaps are small: <b class="name">Bijan Robinson</b>
+          <span class="delta down">&minus;$3</span>, <b class="name">De'Von Achane</b>
+          <span class="delta up">+$4</span>, <b class="name">Caleb Williams</b>
+          <span class="delta up">+$7</span>. Nothing here looks like the first version's $56
+          Gibbs gap &mdash; that number was the bug, not a finding.
         </div>
       </li>
       <li>
         <span class="finding-num">04</span>
         <div class="finding-body">
-          At QB, the market disagrees with the <em>shape</em> of our model, not just individual
-          names: it spreads value further down the position (<b class="name">Josh Allen</b>
-          <span class="delta down">&minus;$4</span>, <b class="name">Jayden Daniels</b>
-          <span class="delta down">&minus;$5</span>) instead of concentrating it in the top
-          three the way our scarcity math does.
+          Only 4&ndash;6 players per position have ever actually traded (see each section's real
+          count below). Everyone else &mdash; the entire "top 45" RB/WR list included &mdash; gets
+          no market figure at all now, honestly, instead of a manufactured one.
         </div>
       </li>
     </ol>
   </div>
 
-  <div class="callout">
-    <span class="mark">&#9888;</span>
-    <p>
-      <b>Read the greyed-out rows as "no signal," not "tied."</b> Below roughly the top 8&ndash;10
-      names per position, Polymarket's quoted price is just the midpoint of a nearly-empty order
-      book (bid near $0.00, ask near $0.10) &mdash; nobody has actually traded there. Summed across
-      a position, these phantom quotes push the field's total implied probability well past 100%,
-      which means they're <em>diluting</em> the studs' true share rather than inflating it. Treat
-      every dimmed row below as filler, and the bold rows above it as the real finding.
-    </p>
-  </div>
-
   <section class="pos" id="qb">
     <div class="section-head">
       <h2>Quarterback</h2>
-      <span class="pool-note">$__QB_POOL__ pool reallocated · Polymarket volume $__QB_VOL__</span>
+      <span class="pool-note">__QB_REAL__ names ever traded · $__QB_POOL__ JP $ pool</span>
     </div>
     <div class="legend">
       <span><i class="swatch" style="background:var(--accent)"></i> JP $ (our model)</span>
       <span><i class="swatch" style="background:var(--market)"></i> Market-implied $</span>
-      <span><i class="swatch thin-demo"></i> thin / no real signal</span>
+      <span>&mdash; = never traded, no figure shown</span>
     </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>JP Rank</th><th>Player</th><th class="num">JP $</th><th class="num">Market $</th><th class="num">&Delta;</th><th>Relative</th></tr></thead>
         <tbody id="qb-body"></tbody>
       </table>
-      <div class="tail-note">Showing the top 15 of 37 matched QBs &mdash; every name past this point sits at the market's exact $2.63 floor.</div>
+      <div class="tail-note">Showing the top 15 of 37 matched QBs.</div>
     </div>
   </section>
 
   <section class="pos" id="rb">
     <div class="section-head">
       <h2>Running Back</h2>
-      <span class="pool-note">$__RB_POOL__ pool reallocated · Polymarket volume $__RB_VOL__</span>
+      <span class="pool-note">__RB_REAL__ names ever traded · $__RB_POOL__ JP $ pool</span>
     </div>
     <div class="table-wrap">
       <table>
@@ -275,7 +308,7 @@
   <section class="pos" id="wr">
     <div class="section-head">
       <h2>Wide Receiver</h2>
-      <span class="pool-note">$__WR_POOL__ pool reallocated · Polymarket volume $__WR_VOL__</span>
+      <span class="pool-note">__WR_REAL__ names ever traded · $__WR_POOL__ JP $ pool</span>
     </div>
     <div class="table-wrap">
       <table>
@@ -288,14 +321,14 @@
   <section class="pos" id="te">
     <div class="section-head">
       <h2>Tight End</h2>
-      <span class="pool-note">$__TE_POOL__ pool reallocated · Polymarket volume $__TE_VOL__</span>
+      <span class="pool-note">__TE_REAL__ names ever traded · $__TE_POOL__ JP $ pool</span>
     </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>JP Rank</th><th>Player</th><th class="num">JP $</th><th class="num">Market $</th><th class="num">&Delta;</th><th>Relative</th></tr></thead>
         <tbody id="te-body"></tbody>
       </table>
-      <div class="tail-note">Showing the top 15 of 36 matched TEs &mdash; almost all of the position's $1,410 in Polymarket volume sits on Brock Bowers alone.</div>
+      <div class="tail-note">Showing the top 15 of 36 matched TEs.</div>
     </div>
   </section>
 
@@ -303,31 +336,38 @@
     <h2>Method &amp; caveats</h2>
     <div class="col">
       <div>
-        <h3>How the reallocation works</h3>
+        <h3>The idea, in plain terms</h3>
         <p>
-          Each Polymarket market is a field of "will X finish #1 in fantasy points at his
-          position" contracts. Treated as a Plackett&ndash;Luce choice model, a player's
-          normalized probability within the field <em>is</em> his relative strength &mdash; no
-          de-vig math needed beyond normalizing named candidates to sum to 1. We then redistribute
-          the <em>same total</em> JP&nbsp;$ our model already assigns to that position's matched
-          players, in the market's proportions instead of VORP/scarcity. That's a fair
-          apples-to-apples comparison of shape, not a claim about the market's absolute dollar
-          value of the position.
+          A "who finishes #1" market doesn't hand out probability in proportion to how good a
+          player is &mdash; it hands out probability in proportion to how likely he is to be
+          <em>the single best out of the whole field that day</em>. Those aren't the same thing.
+          A modest real edge can still make someone a heavy favorite, the same way a runner who's
+          only slightly faster than the field can still be a 4-to-1 favorite to win outright,
+          because only the fastest finish matters, not how everyone else compares to each other.
+        </p>
+        <p>
+          So instead of reading "32% vs. 6.85%" as "4.7x the points," we ask the reverse question:
+          <em>how big a real points edge would it take to produce a 32%-vs-6.85% favorite?</em>
+          That's the &beta; slider above &mdash; it's the assumed spread (standard deviation) of
+          season-total outcomes. The math:
+          <code class="inline">points_i &minus; points_anchor = &beta; &times; ln(P_i / P_anchor)</code>,
+          converted to dollars at our model's own rate of
+          <code class="inline">$__STARTER_RATE_DISPLAY__/point</code>. Every table anchors to that
+          position's own market favorite (Gibbs, Nacua, McBride, Allen) at his existing JP $, and
+          computes everyone else relative to him.
         </p>
       </div>
       <div>
-        <h3>Where this breaks down</h3>
+        <h3>Where this still breaks down</h3>
         <ul>
-          <li>These are "leads the league" markets, not yardage/points over-unders &mdash;
-            inherently more top-heavy than an auction-value curve should be.</li>
-          <li>The named field's probabilities sum to well over 100% once thin/unseeded quotes are
-            included &mdash; see the callout above. We don't correct for it here; a tighter cut
-            (real bid required) would sharpen every finding above, not soften it.</li>
+          <li>&beta; isn't measured, it's assumed &mdash; that's the whole reason it's a slider
+            and not a fixed number. Treat any single reading as illustrative, not precise.</li>
+          <li>"Real" means bestBid &ge; 2&#162; &mdash; still thin by sportsbook standards, just no
+            longer indistinguishable from an untraded stub.</li>
+          <li>These are "leads the league" markets, not yardage/points over-unders, and still
+            carry the injury/role risk of a full season for one player.</li>
           <li>JP $ here uses generic 12-team/$200/default-roster settings, not this league's
             actual saved settings.</li>
-          <li>Each market lists 111 candidates; most are named "Player 1"&ndash;"Player 60" or
-            real players outside our own pool (backups, rookies) &mdash; dropped from the
-            reallocation entirely.</li>
         </ul>
       </div>
     </div>
@@ -342,6 +382,7 @@
 
 <script>
   const DATA = __DATA__;
+  const STARTER_RATE = __STARTER_RATE_JS__;
 
   function fmt(n) { return (n < 0 ? "&minus;$" : "$") + Math.abs(n).toFixed(2).replace(/\.00$/, ""); }
   function fmtDelta(n) {
@@ -349,19 +390,44 @@
     return sign + "$" + Math.abs(n).toFixed(2).replace(/\.00$/, "");
   }
 
-  function renderTable(pos, rows) {
+  function computeCorrected(rows, beta) {
+    const real = rows.filter(r => r.real).sort((a, b) => b.prob - a.prob);
+    if (!real.length) return new Map();
+    const anchor = real[0];
+    const out = new Map();
+    for (const r of real) {
+      const corrected = anchor.jpValue + beta * Math.log(r.prob / anchor.prob) * STARTER_RATE;
+      out.set(r.name, Math.max(1, corrected));
+    }
+    return out;
+  }
+
+  function renderTable(pos, rows, beta) {
     const tbody = document.getElementById(pos.toLowerCase() + "-body");
-    const maxVal = Math.max(...rows.map(r => Math.max(r.jpValue, r.marketValue)));
+    const corrected = computeCorrected(rows, beta);
+    const maxVal = Math.max(...rows.map(r => Math.max(r.jpValue, corrected.get(r.name) || 0)));
     tbody.innerHTML = rows.map(r => {
-      const deltaClass = r.dollarDelta > 0 ? "up" : r.dollarDelta < 0 ? "down" : "";
+      const mkt = corrected.get(r.name);
       const jpPct = Math.max(2, (r.jpValue / maxVal) * 100);
-      const mktPct = Math.max(2, (r.marketValue / maxVal) * 100);
-      return `<tr class="${r.thin ? "thin" : ""}">
+      if (mkt == null) {
+        return `<tr class="no-signal">
+          <td class="rank">${r.jpRank}</td>
+          <td class="player">${r.name}</td>
+          <td class="num jp">${fmt(r.jpValue)}</td>
+          <td class="num dash">&mdash;</td>
+          <td class="num dash">&mdash;</td>
+          <td><span class="no-signal-note">never traded</span></td>
+        </tr>`;
+      }
+      const delta = mkt - r.jpValue;
+      const deltaClass = delta > 0.005 ? "up" : delta < -0.005 ? "down" : "";
+      const mktPct = Math.max(2, (mkt / maxVal) * 100);
+      return `<tr>
         <td class="rank">${r.jpRank}</td>
-        <td class="player">${r.name}${r.thin ? '<span class="thin-tag">thin</span>' : ""}</td>
+        <td class="player">${r.name}</td>
         <td class="num jp">${fmt(r.jpValue)}</td>
-        <td class="num mkt">${fmt(r.marketValue)}</td>
-        <td class="num delta ${deltaClass}">${fmtDelta(r.dollarDelta)}</td>
+        <td class="num mkt">${fmt(mkt)}</td>
+        <td class="num delta ${deltaClass}">${fmtDelta(delta)}</td>
         <td>
           <div class="bars">
             <div class="bar-track"><div class="bar-fill jp" style="width:${jpPct}%"></div></div>
@@ -372,9 +438,19 @@
     }).join("");
   }
 
-  for (const pos of ["QB", "RB", "WR", "TE"]) {
-    renderTable(pos, DATA[pos]);
+  function renderAll(beta) {
+    for (const pos of ["QB", "RB", "WR", "TE"]) renderTable(pos, DATA[pos], beta);
   }
+
+  const slider = document.getElementById("beta-slider");
+  const readout = document.getElementById("beta-readout");
+  slider.addEventListener("input", () => {
+    const beta = Number(slider.value);
+    readout.textContent = "β = " + beta + " pts";
+    renderAll(beta);
+  });
+
+  renderAll(Number(slider.value));
 </script>
 </body>
 </html>
