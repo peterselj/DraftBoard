@@ -138,6 +138,74 @@ test("a full round trip from pasted text to updated pool", () => {
   assert.equal(players.find((p) => p.id === "d").projected, 2);
 });
 
+// What copying First Down Studio's season-rankings table (firstdown.studio)
+// actually produces: no "TEAM - POS" line like Yahoo's paste has (there's no
+// position column at all — each position is its own page), the player name
+// doubled, and a tab-separated stat line — Pts first — after the team code.
+// This is real output pasted from the site, not reshaped for the test.
+const FIRSTDOWN_PASTE = `#\tPlayer\tPts\tPass Yds\tPass TDs\tRush Yds\tRush TDs\tMVP
+1
+Josh Allen
+Josh Allen
+BUF
+332\t3,614\t24.8\t499\t10.7\t+600
+2
+Joe Burrow
+Joe Burrow
+CIN
+289\t3,944\t32.8\t138\t2\t+800
+3
+Drake Maye
+Drake Maye
+NE
+288\t3,764\t25.7\t414\t3.6\t+1000
+4
+Trevor Lawrence
+Trevor Lawrence
+JAX
+288\t3,759\t25.7\t339\t5.2\t+1600
+5
+Jalen Hurts
+Jalen Hurts
+PHI
+285\t3,204\t22.1\t412\t8.2\t+2500
+16
+Matthew Stafford
+Matthew Stafford
+LAR
+250\t3,854\t30.1\t19\t-\t+1100
+`;
+
+test("First Down Studio's vertical copy is read correctly", () => {
+  const { rows, layout } = parseImport(FIRSTDOWN_PASTE);
+  assert.equal(layout, "firstdown");
+  assert.deepEqual(
+    rows.map((r) => [r.name, r.value]),
+    [
+      ["Josh Allen", 332],
+      ["Joe Burrow", 289],
+      ["Drake Maye", 288],
+      ["Trevor Lawrence", 288],   // was misread as Hurts's row before this fix
+      ["Jalen Hurts", 285],       // was misread as Lawrence's row before this fix
+      ["Matthew Stafford", 250],  // "-" in the stat line (no rush TDs) doesn't shift Pts
+    ]
+  );
+});
+
+test("First Down Studio rows land on the right players by name alone (no position column)", () => {
+  const qbPool = [
+    { id: "a", name: "Josh Allen", pos: "QB", projected: 30 },
+    { id: "b", name: "Trevor Lawrence", pos: "QB", projected: 10 },
+    { id: "c", name: "Jalen Hurts", pos: "QB", projected: 25 },
+  ];
+  const { rows } = parseImport(FIRSTDOWN_PASTE);
+  const { players, matched } = applyImport(qbPool, rows, "fdvPoints");
+  assert.equal(matched, 3);
+  assert.equal(players.find((p) => p.id === "a").fdvPoints, 332);
+  assert.equal(players.find((p) => p.id === "b").fdvPoints, 288);
+  assert.equal(players.find((p) => p.id === "c").fdvPoints, 285);
+});
+
 // FantasyPros' auction calculator copies out as several tables stitched
 // together, one per position, each with its own repeated "#  POS  Value"
 // header, and names carry the team (and sometimes an injury badge) right in
