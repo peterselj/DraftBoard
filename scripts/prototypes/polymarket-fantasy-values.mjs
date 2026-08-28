@@ -7,16 +7,31 @@
 // winner-take-all field: one market per candidate, each priced as
 // P(that player finishes #1 in fantasy points at his position).
 //
-// Method: treat the probability field as a Plackett-Luce / softmax choice
-// model, where P(i) ∝ strength(i). That means each player's normalized
-// probability *is* their relative strength within the field — no de-vig math
-// needed beyond normalizing the named field to sum to 1 (the small residual
-// mass belongs to unlisted/rookie players the market still prices as live
-// longshots, and we drop it here). We then redistribute the SAME total JP $
-// our model already assigns to that field of players, proportional to market
-// strength instead of VORP — an apples-to-apples reallocation, not a new
-// absolute price. That sidesteps the much harder problem of turning a
-// "P(leads league)" field into an absolute yardage/points number.
+// v1 of this script redistributed each position's JP $ pool in direct
+// proportion to raw probability. That's wrong on two independent counts,
+// both caught by sanity-checking the output against real numbers rather than
+// trusting the pipeline:
+//
+//   1. P(finish #1 of ~40) is not a linear rescaling of point production.
+//      Gibbs at 32% vs. McCaffrey at 6.85% does NOT mean Gibbs is expected to
+//      score ~4.7x McCaffrey's points — our own projections have them 17%
+//      apart (299.9 vs 256.0). Win-probability in a large field is a *softmax*
+//      of underlying strength (Plackett-Luce / Gumbel-max), so the right
+//      inversion is logarithmic: points_i - points_j = beta * ln(P_i/P_j),
+//      not proportional to P_i/P_j directly. beta is the season's assumed
+//      point-total standard deviation — genuinely uncertain, which is why the
+//      report exposes it as a slider rather than baking in one number.
+//
+//   2. Markets nobody has traded (bestBid near $0) aren't "5% conviction" —
+//      they're un-priced. Feeding them through ANY transform, linear or log,
+//      manufactures a number from noise (v1 had untraded backups like Isiah
+//      Pacheco pricing higher than Jonathan Taylor). Rows without a real bid
+//      get no market figure at all now, full stop — see REAL_BID_MIN below.
+//
+// This script only fetches + matches + tags "real" vs. "thin" and hands the
+// raw probabilities to the report; the log-odds -> $ conversion itself lives
+// client-side in the report (report-template.html) so the beta assumption is
+// an interactive slider, not a fixed number baked into a build step.
 //
 // Run: node scripts/prototypes/polymarket-fantasy-values.mjs
 // Output: scripts/prototypes/out/polymarket-vs-jp.json (also printed as a table)
@@ -30,6 +45,12 @@ import { normalize } from "../../src/lib/fuzzy.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..", "..");
+
+// Below this best-bid, a contract has no real two-sided market behind it —
+// see the RB spot-check that started this: Isiah Pacheco (bestBid $0.003)
+// and Jonathan Taylor (bestBid $0.04) both showed ~5% "probability," but only
+// one of those numbers reflects anyone actually trading.
+const REAL_BID_MIN = 0.02;
 
 const EVENTS = {
   QB: "fantasy-football-2026-27-qb-points-leader-20260807010541883",
@@ -49,13 +70,6 @@ async function fetchLeaderField(slug) {
     return {
       name: m.groupItemTitle,
       prob: Number(prices[0]),
-      volume: Number(m.volume || 0),
-      // The reported "prob" above is just the midpoint of outcomePrices, which
-      // for an untraded market is the midpoint of an empty book — not a
-      // considered price. bestBid is the tell: real money resting on "yes" at
-      // that level. Traded-volume looked like the obvious thinness signal but
-      // is unreliable (e.g. Josh Allen shows $0 recorded volume despite a
-      // live, tight 28c/30c book) — bestBid catches what volume misses.
       bestBid: m.bestBid == null ? null : Number(m.bestBid),
     };
   }).filter((r) => r.name && Number.isFinite(r.prob));
@@ -64,10 +78,11 @@ async function fetchLeaderField(slug) {
 function loadCurrentPool() {
   const raw = readFileSync(join(repoRoot, "public/data/values-2026.json"), "utf8");
   const { players } = JSON.parse(raw);
-  const { values } = computeModelValues(players, DEFAULT_SETTINGS);
-  return players
+  const { values, starterRate } = computeModelValues(players, DEFAULT_SETTINGS);
+  const pool = players
     .map((p) => ({ ...p, jpValue: values.get(p.id) ?? null }))
     .filter((p) => p.jpValue != null);
+  return { pool, starterRate };
 }
 
 function compareForPosition(pos, field, pool) {
@@ -81,57 +96,59 @@ function compareForPosition(pos, field, pool) {
     else unmatched.push(row.name);
   }
 
-  const probMass = matched.reduce((s, r) => s + r.prob, 0);
-  const jpPool = matched.reduce((s, r) => s + r.jpValue, 0);
-
   const rows = matched.map((r) => ({
     name: r.name,
     prob: r.prob,
-    marketShare: probMass > 0 ? r.prob / probMass : 0,
-    jpValue: Math.round(r.jpValue * 100) / 100,
-    marketValue: probMass > 0 ? Math.max(1, Math.round((jpPool * (r.prob / probMass)) * 100) / 100) : null,
-    volume: r.volume,
     bestBid: r.bestBid,
+    real: r.bestBid != null && r.bestBid >= REAL_BID_MIN,
+    jpValue: Math.round(r.jpValue * 100) / 100,
   }));
 
   rows.sort((a, b) => b.jpValue - a.jpValue);
   rows.forEach((r, i) => { r.jpRank = i + 1; });
-  const byMarket = [...rows].sort((a, b) => b.marketValue - a.marketValue);
-  byMarket.forEach((r, i) => { r.marketRank = i + 1; });
-  rows.forEach((r) => {
-    r.rankDelta = r.jpRank - r.marketRank; // positive: market ranks him higher than we do
-    r.dollarDelta = Math.round((r.marketValue - r.jpValue) * 100) / 100;
-  });
 
-  return { pos, jpPool: Math.round(jpPool * 100) / 100, totalMarketVolume: matched.reduce((s, r) => s + r.volume, 0), rows, unmatched };
+  return {
+    pos,
+    jpPool: Math.round(matched.reduce((s, r) => s + r.jpValue, 0) * 100) / 100,
+    realCount: rows.filter((r) => r.real).length,
+    matchedCount: rows.length,
+    rows,
+    unmatched,
+  };
 }
 
 async function main() {
   console.log("Fetching Polymarket fantasy points-leader fields…");
-  const pool = loadCurrentPool();
+  const { pool, starterRate } = loadCurrentPool();
 
   const results = {};
   for (const [pos, slug] of Object.entries(EVENTS)) {
     const field = await fetchLeaderField(slug);
     results[pos] = compareForPosition(pos, field, pool);
-    console.log(`  ${pos}: ${field.length} Polymarket candidates, ${results[pos].unmatched.length} unmatched to our pool`);
+    const r = results[pos];
+    console.log(`  ${pos}: ${field.length} Polymarket candidates, ${r.realCount} with a real bid (of ${r.matchedCount} matched to our pool)`);
   }
 
   const outDir = join(here, "out");
   mkdirSync(outDir, { recursive: true });
   const outPath = join(outDir, "polymarket-vs-jp.json");
-  writeFileSync(outPath, JSON.stringify({ generated: new Date().toISOString(), results }, null, 2));
+  writeFileSync(outPath, JSON.stringify({ generated: new Date().toISOString(), starterRate, results }, null, 2));
   console.log(`\nWrote ${outPath}`);
 
+  // Preview at a representative beta=30 just so the console output means
+  // something; the report itself makes this a live slider.
+  const beta = 30;
   for (const pos of Object.keys(EVENTS)) {
-    const { rows, unmatched, jpPool, totalMarketVolume } = results[pos];
-    console.log(`\n=== ${pos} — JP pool $${jpPool}, Polymarket volume $${Math.round(totalMarketVolume)} ===`);
-    console.log(
-      rows.slice(0, 12)
-        .map((r) => `  ${String(r.jpRank).padStart(2)}. ${r.name.padEnd(24)} JP $${String(r.jpValue).padStart(6)}  ->  Mkt $${String(r.marketValue).padStart(6)}  (Δ${r.dollarDelta >= 0 ? "+" : ""}${r.dollarDelta}, rank ${r.rankDelta >= 0 ? "+" : ""}${r.rankDelta})`)
-        .join("\n")
-    );
-    if (unmatched.length) console.log(`  Unmatched (not in our pool): ${unmatched.join(", ")}`);
+    const { rows } = results[pos];
+    const real = rows.filter((r) => r.real).sort((a, b) => b.prob - a.prob);
+    if (!real.length) { console.log(`\n=== ${pos} — no rows with a real bid ===`); continue; }
+    const anchor = real[0];
+    console.log(`\n=== ${pos} — anchor ${anchor.name} (JP $${anchor.jpValue}), beta=${beta} ===`);
+    for (const r of real) {
+      const corrected = anchor.jpValue + beta * Math.log(r.prob / anchor.prob) * starterRate;
+      const delta = corrected - r.jpValue;
+      console.log(`  ${r.name.padEnd(22)} JP $${String(r.jpValue).padStart(6)}  ->  $${corrected.toFixed(2).padStart(7)}  (${delta >= 0 ? "+" : ""}${delta.toFixed(2)})`);
+    }
   }
 }
 

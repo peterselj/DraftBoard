@@ -104,13 +104,28 @@
   .delta.down { color: var(--down); }
   .finding-body p { margin: 3px 0 0; color: var(--ink-muted); font-size: 14px; }
 
-  .callout {
-    background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-ink);
-    border-radius: 12px; padding: 16px 20px; font-size: 13.5px; display: flex; gap: 12px; align-items: flex-start;
-  }
+  .callout { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-ink); border-radius: 12px; padding: 16px 20px; font-size: 13.5px; display: flex; gap: 12px; align-items: flex-start; }
   .callout .mark { font-family: "IBM Plex Mono", monospace; font-weight: 600; flex-shrink: 0; }
   .callout p { margin: 0; line-height: 1.6; }
   .callout b { font-weight: 600; }
+
+  /* Beta control */
+  .beta-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px 26px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px;
+  }
+  .beta-panel h2 { font-size: 17px; }
+  .beta-panel .explain { color: var(--ink-muted); font-size: 14px; margin: 0; max-width: 68ch; }
+  .beta-row { display: flex; align-items: center; gap: 16px; }
+  .beta-row input[type="range"] {
+    flex: 1; accent-color: var(--accent); height: 4px; cursor: pointer;
+  }
+  .beta-readout {
+    font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 8px;
+    padding: 6px 12px; white-space: nowrap; min-width: 156px; text-align: center;
+  }
+  .beta-labels { display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-faint); }
 
   .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
   table { border-collapse: collapse; width: 100%; min-width: 640px; }
@@ -123,14 +138,15 @@
   tbody td { padding: 8px 14px; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; vertical-align: middle; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:nth-child(even) { background: var(--surface-2); }
-  tbody tr.thin { opacity: 0.55; }
+  tbody tr.no-signal { opacity: 0.5; }
   td.rank { font-family: "IBM Plex Mono", monospace; color: var(--ink-faint); font-size: 12px; }
   td.player { font-weight: 500; }
-  .thin-tag { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--ink-faint); margin-left: 6px; font-weight: 400; }
+  .no-signal-note { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-faint); font-weight: 400; }
   td.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
   td.jp { color: var(--accent); }
   td.mkt { color: var(--market); }
   td.delta { font-weight: 600; }
+  td.dash { color: var(--ink-faint); font-family: "IBM Plex Mono", monospace; }
 
   .bars { display: flex; flex-direction: column; gap: 3px; width: 120px; }
   .bar-track { position: relative; height: 6px; background: var(--border-soft); border-radius: 3px; overflow: hidden; }
@@ -144,7 +160,6 @@
   .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-muted); align-items: center; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-  .swatch.thin-demo { background: var(--ink-faint); opacity: 0.55; }
 
   section.pos { display: flex; flex-direction: column; gap: 12px; }
 
@@ -159,6 +174,7 @@
   @media (max-width: 560px) {
     .page { padding: 36px 16px 72px; }
     .bars { display: none; }
+    .beta-row { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -170,10 +186,11 @@
     <h1>Does Vegas disagree with the model?</h1>
     <p class="dek">
       Polymarket runs a season-long "who leads fantasy points at each position" market for
-      2026&#8211;27 &mdash; a live field of real-money probabilities, priced months before Week&nbsp;1.
-      This reallocates the same JP&nbsp;$ pool our bottoms-up model already assigns to each
-      position, in the market's proportions instead of VORP, to see where real money and the
-      model actually disagree.
+      2026&#8211;27. This page turns that into a dollar comparison against JP&nbsp;$, our
+      bottoms-up model &mdash; but only for the handful of players per position anyone has
+      actually traded, and using math that doesn't overstate what a betting favorite implies
+      about point production. <b>Rebuilt version</b> &mdash; the first pass had two real bugs;
+      see the callout below.
     </p>
     <div class="meta-row">
       <span class="chip">Snapshot <b>August 28, 2026</b></span>
@@ -182,87 +199,103 @@
     </div>
   </header>
 
+  <div class="callout">
+    <span class="mark">&#9888;</span>
+    <p>
+      <b>What changed from the first version:</b> it redistributed each position's dollar pool
+      in direct proportion to raw win-probability, which implied things like "Vegas expects
+      Gibbs to outscore McCaffrey 4-to-1" &mdash; nonsense; our own projections have them 17%
+      apart. Win-probability in a big field is a <em>logarithmic</em> function of the underlying
+      stat line, not a linear one (think horse racing: a modest real speed edge can still make a
+      horse a heavy favorite, because only the fastest one on the day wins). This version inverts
+      that properly, and it only prices players with a real, currently-quoted bid &mdash; an
+      untraded contract isn't "5% conviction," it's no information at all, and got assigned a
+      market figure anyway last time (a backup, Isiah Pacheco, priced above Jonathan Taylor).
+      Full explanation in Method &amp; caveats below.
+    </p>
+  </div>
+
+  <div class="beta-panel">
+    <h2>How much would a real points edge move the odds?</h2>
+    <p class="explain">
+      That's the one real assumption this whole page rests on, and it's genuinely uncertain, so
+      it's a dial instead of a fixed number. A tighter assumption (left) says even small point
+      gaps swing win-probability a lot, so a big betting favorite implies only a small real edge.
+      A looser assumption (right) says it takes a bigger points edge to move the odds this much.
+      Drag it &mdash; every number below updates live.
+    </p>
+    <div class="beta-row">
+      <input type="range" id="beta-slider" min="15" max="80" value="30" step="1">
+      <span class="beta-readout" id="beta-readout">&beta; = 30 pts</span>
+    </div>
+    <div class="beta-labels"><span>tighter &mdash; favorites imply less</span><span>looser &mdash; favorites imply more</span></div>
+  </div>
+
   <div class="findings">
-    <h2>What actually moved</h2>
+    <h2>What actually moved (at &beta;=30)</h2>
     <ol class="finding-list">
       <li>
         <span class="finding-num">01</span>
         <div class="finding-body">
-          <b class="name">Jahmyr Gibbs</b> is the single biggest disagreement in the dataset:
-          JP&nbsp;$64 vs. a market-implied <b>$120</b> &mdash;
-          <span class="delta up">+$56</span>. His own contract is genuinely, currently quoted at
-          21&#162;&ndash;43&#162; (not a stub) &mdash; real money thinks he's a much clearer RB1
-          than our VORP curve credits him for.
+          <b class="name">Jaxon Smith-Njigba</b> and <b class="name">Amon-Ra St. Brown</b> carry
+          the biggest real gaps in the whole dataset: <span class="delta up">+$6</span> and
+          <span class="delta up">+$7</span> over JP $. The market rates both meaningfully closer
+          to Puka Nacua, its WR favorite, than our model does.
         </div>
       </li>
       <li>
         <span class="finding-num">02</span>
         <div class="finding-body">
-          The market is more convicted on the very top of the WR pool across the board:
-          <b class="name">Puka Nacua</b> <span class="delta up">+$39</span>,
-          <b class="name">Jaxon Smith-Njigba</b> <span class="delta up">+$34</span>,
-          <b class="name">Amon-Ra&nbsp;St.&nbsp;Brown</b> <span class="delta up">+$24</span>.
-          Our model treats WR1&ndash;WR4 as a fairly even tier; the market sees real separation.
+          At tight end, it flips our framing entirely: <b class="name">Brock Bowers</b> comes out
+          <span class="delta down">&minus;$8</span>, the largest single disagreement found once
+          the correction is applied &mdash; the market's actual TE favorite is
+          <b class="name">Trey McBride</b>, not Bowers.
         </div>
       </li>
       <li>
         <span class="finding-num">03</span>
         <div class="finding-body">
-          <b class="name">Jonathan Taylor</b> and <b class="name">Derrick Henry</b> go the other
-          way, hard: our #4 and #5 RBs by JP&nbsp;$ get priced by the market near the RB pool's
-          floor &mdash; <span class="delta down">&minus;$36</span> and
-          <span class="delta down">&minus;$25</span>. Bettors are pricing in age/workload
-          regression a season-total projection doesn't see coming.
+          Everywhere else, the gaps are small: <b class="name">Bijan Robinson</b>
+          <span class="delta down">&minus;$3</span>, <b class="name">De'Von Achane</b>
+          <span class="delta up">+$4</span>, <b class="name">Caleb Williams</b>
+          <span class="delta up">+$7</span>. Nothing here looks like the first version's $56
+          Gibbs gap &mdash; that number was the bug, not a finding.
         </div>
       </li>
       <li>
         <span class="finding-num">04</span>
         <div class="finding-body">
-          At QB, the market disagrees with the <em>shape</em> of our model, not just individual
-          names: it spreads value further down the position (<b class="name">Josh Allen</b>
-          <span class="delta down">&minus;$4</span>, <b class="name">Jayden Daniels</b>
-          <span class="delta down">&minus;$5</span>) instead of concentrating it in the top
-          three the way our scarcity math does.
+          Only 4&ndash;6 players per position have ever actually traded (see each section's real
+          count below). Everyone else &mdash; the entire "top 45" RB/WR list included &mdash; gets
+          no market figure at all now, honestly, instead of a manufactured one.
         </div>
       </li>
     </ol>
   </div>
 
-  <div class="callout">
-    <span class="mark">&#9888;</span>
-    <p>
-      <b>Read the greyed-out rows as "no signal," not "tied."</b> Below roughly the top 8&ndash;10
-      names per position, Polymarket's quoted price is just the midpoint of a nearly-empty order
-      book (bid near $0.00, ask near $0.10) &mdash; nobody has actually traded there. Summed across
-      a position, these phantom quotes push the field's total implied probability well past 100%,
-      which means they're <em>diluting</em> the studs' true share rather than inflating it. Treat
-      every dimmed row below as filler, and the bold rows above it as the real finding.
-    </p>
-  </div>
-
   <section class="pos" id="qb">
     <div class="section-head">
       <h2>Quarterback</h2>
-      <span class="pool-note">$138.93 pool reallocated · Polymarket volume $385</span>
+      <span class="pool-note">6 of 37 names ever traded · $138.93 JP $ pool</span>
     </div>
     <div class="legend">
       <span><i class="swatch" style="background:var(--accent)"></i> JP $ (our model)</span>
       <span><i class="swatch" style="background:var(--market)"></i> Market-implied $</span>
-      <span><i class="swatch thin-demo"></i> thin / no real signal</span>
+      <span>&mdash; = never traded, no figure shown</span>
     </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>JP Rank</th><th>Player</th><th class="num">JP $</th><th class="num">Market $</th><th class="num">&Delta;</th><th>Relative</th></tr></thead>
         <tbody id="qb-body"></tbody>
       </table>
-      <div class="tail-note">Showing the top 15 of 37 matched QBs &mdash; every name past this point sits at the market's exact $2.63 floor.</div>
+      <div class="tail-note">Showing the top 15 of 37 matched QBs.</div>
     </div>
   </section>
 
   <section class="pos" id="rb">
     <div class="section-head">
       <h2>Running Back</h2>
-      <span class="pool-note">$972.88 pool reallocated · Polymarket volume $1,058</span>
+      <span class="pool-note">4 of 43 names ever traded · $972.88 JP $ pool</span>
     </div>
     <div class="table-wrap">
       <table>
@@ -275,7 +308,7 @@
   <section class="pos" id="wr">
     <div class="section-head">
       <h2>Wide Receiver</h2>
-      <span class="pool-note">$870.40 pool reallocated · Polymarket volume $1,331</span>
+      <span class="pool-note">5 of 46 names ever traded · $870.40 JP $ pool</span>
     </div>
     <div class="table-wrap">
       <table>
@@ -288,14 +321,14 @@
   <section class="pos" id="te">
     <div class="section-head">
       <h2>Tight End</h2>
-      <span class="pool-note">$137.23 pool reallocated · Polymarket volume $1,410</span>
+      <span class="pool-note">6 of 36 names ever traded · $137.23 JP $ pool</span>
     </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>JP Rank</th><th>Player</th><th class="num">JP $</th><th class="num">Market $</th><th class="num">&Delta;</th><th>Relative</th></tr></thead>
         <tbody id="te-body"></tbody>
       </table>
-      <div class="tail-note">Showing the top 15 of 36 matched TEs &mdash; almost all of the position's $1,410 in Polymarket volume sits on Brock Bowers alone.</div>
+      <div class="tail-note">Showing the top 15 of 36 matched TEs.</div>
     </div>
   </section>
 
@@ -303,31 +336,38 @@
     <h2>Method &amp; caveats</h2>
     <div class="col">
       <div>
-        <h3>How the reallocation works</h3>
+        <h3>The idea, in plain terms</h3>
         <p>
-          Each Polymarket market is a field of "will X finish #1 in fantasy points at his
-          position" contracts. Treated as a Plackett&ndash;Luce choice model, a player's
-          normalized probability within the field <em>is</em> his relative strength &mdash; no
-          de-vig math needed beyond normalizing named candidates to sum to 1. We then redistribute
-          the <em>same total</em> JP&nbsp;$ our model already assigns to that position's matched
-          players, in the market's proportions instead of VORP/scarcity. That's a fair
-          apples-to-apples comparison of shape, not a claim about the market's absolute dollar
-          value of the position.
+          A "who finishes #1" market doesn't hand out probability in proportion to how good a
+          player is &mdash; it hands out probability in proportion to how likely he is to be
+          <em>the single best out of the whole field that day</em>. Those aren't the same thing.
+          A modest real edge can still make someone a heavy favorite, the same way a runner who's
+          only slightly faster than the field can still be a 4-to-1 favorite to win outright,
+          because only the fastest finish matters, not how everyone else compares to each other.
+        </p>
+        <p>
+          So instead of reading "32% vs. 6.85%" as "4.7x the points," we ask the reverse question:
+          <em>how big a real points edge would it take to produce a 32%-vs-6.85% favorite?</em>
+          That's the &beta; slider above &mdash; it's the assumed spread (standard deviation) of
+          season-total outcomes. The math:
+          <code class="inline">points_i &minus; points_anchor = &beta; &times; ln(P_i / P_anchor)</code>,
+          converted to dollars at our model's own rate of
+          <code class="inline">$0.325/point</code>. Every table anchors to that
+          position's own market favorite (Gibbs, Nacua, McBride, Allen) at his existing JP $, and
+          computes everyone else relative to him.
         </p>
       </div>
       <div>
-        <h3>Where this breaks down</h3>
+        <h3>Where this still breaks down</h3>
         <ul>
-          <li>These are "leads the league" markets, not yardage/points over-unders &mdash;
-            inherently more top-heavy than an auction-value curve should be.</li>
-          <li>The named field's probabilities sum to well over 100% once thin/unseeded quotes are
-            included &mdash; see the callout above. We don't correct for it here; a tighter cut
-            (real bid required) would sharpen every finding above, not soften it.</li>
+          <li>&beta; isn't measured, it's assumed &mdash; that's the whole reason it's a slider
+            and not a fixed number. Treat any single reading as illustrative, not precise.</li>
+          <li>"Real" means bestBid &ge; 2&#162; &mdash; still thin by sportsbook standards, just no
+            longer indistinguishable from an untraded stub.</li>
+          <li>These are "leads the league" markets, not yardage/points over-unders, and still
+            carry the injury/role risk of a full season for one player.</li>
           <li>JP $ here uses generic 12-team/$200/default-roster settings, not this league's
             actual saved settings.</li>
-          <li>Each market lists 111 candidates; most are named "Player 1"&ndash;"Player 60" or
-            real players outside our own pool (backups, rookies) &mdash; dropped from the
-            reallocation entirely.</li>
         </ul>
       </div>
     </div>
@@ -341,7 +381,8 @@
 </div>
 
 <script>
-  const DATA = {"QB":[{"name":"Josh Allen","jpRank":1,"jpValue":25.51,"marketValue":21.49,"dollarDelta":-4.02,"thin":false},{"name":"Lamar Jackson","jpRank":2,"jpValue":14.61,"marketValue":10,"dollarDelta":-4.61,"thin":false},{"name":"Drake Maye","jpRank":3,"jpValue":11.92,"marketValue":7.04,"dollarDelta":-4.88,"thin":false},{"name":"Jalen Hurts","jpRank":4,"jpValue":9.57,"marketValue":5.56,"dollarDelta":-4.01,"thin":false},{"name":"Jayden Daniels","jpRank":5,"jpValue":8.66,"marketValue":3.33,"dollarDelta":-5.33,"thin":false},{"name":"Joe Burrow","jpRank":6,"jpValue":7.48,"marketValue":7.04,"dollarDelta":-0.44,"thin":false},{"name":"Trevor Lawrence","jpRank":7,"jpValue":5.95,"marketValue":2.63,"dollarDelta":-3.32,"thin":true},{"name":"Dak Prescott","jpRank":8,"jpValue":5.78,"marketValue":2.63,"dollarDelta":-3.15,"thin":true},{"name":"Brock Purdy","jpRank":9,"jpValue":5.56,"marketValue":2.63,"dollarDelta":-2.93,"thin":true},{"name":"Caleb Williams","jpRank":10,"jpValue":5.28,"marketValue":5.56,"dollarDelta":0.28,"thin":false},{"name":"Justin Herbert","jpRank":11,"jpValue":4.02,"marketValue":2.63,"dollarDelta":-1.39,"thin":true},{"name":"Jaxson Dart","jpRank":12,"jpValue":3.72,"marketValue":2.63,"dollarDelta":-1.09,"thin":true},{"name":"Bo Nix","jpRank":13,"jpValue":3.6,"marketValue":2.63,"dollarDelta":-0.97,"thin":true},{"name":"Patrick Mahomes","jpRank":14,"jpValue":2.28,"marketValue":2.63,"dollarDelta":0.35,"thin":true},{"name":"Jared Goff","jpRank":15,"jpValue":2.11,"marketValue":2.63,"dollarDelta":0.52,"thin":true}],"RB":[{"name":"Jahmyr Gibbs","jpRank":1,"jpValue":64.12,"marketValue":119.87,"dollarDelta":55.75,"thin":false},{"name":"Bijan Robinson","jpRank":2,"jpValue":61.84,"marketValue":66.6,"dollarDelta":4.76,"thin":false},{"name":"Christian McCaffrey","jpRank":3,"jpValue":49.83,"marketValue":26.07,"dollarDelta":-23.76,"thin":false},{"name":"Jonathan Taylor","jpRank":4,"jpValue":49.28,"marketValue":13.32,"dollarDelta":-35.96,"thin":false},{"name":"Derrick Henry","jpRank":5,"jpValue":44.1,"marketValue":19.03,"dollarDelta":-25.07,"thin":true},{"name":"De'Von Achane","jpRank":6,"jpValue":41.33,"marketValue":17.12,"dollarDelta":-24.21,"thin":false},{"name":"Saquon Barkley","jpRank":7,"jpValue":40.78,"marketValue":19.22,"dollarDelta":-21.56,"thin":true},{"name":"Chase Brown","jpRank":8,"jpValue":40.29,"marketValue":19.41,"dollarDelta":-20.88,"thin":true},{"name":"Omarion Hampton","jpRank":9,"jpValue":37.75,"marketValue":19.79,"dollarDelta":-17.96,"thin":true},{"name":"Ashton Jeanty","jpRank":10,"jpValue":35.31,"marketValue":19.22,"dollarDelta":-16.09,"thin":true},{"name":"Breece Hall","jpRank":11,"jpValue":29.16,"marketValue":19.03,"dollarDelta":-10.13,"thin":true},{"name":"Kyren Williams","jpRank":12,"jpValue":29,"marketValue":19.03,"dollarDelta":-9.97,"thin":true},{"name":"David Montgomery","jpRank":13,"jpValue":28.38,"marketValue":19.41,"dollarDelta":-8.97,"thin":true},{"name":"D'Andre Swift","jpRank":14,"jpValue":28.18,"marketValue":19.03,"dollarDelta":-9.15,"thin":true},{"name":"Javonte Williams","jpRank":15,"jpValue":27.96,"marketValue":19.03,"dollarDelta":-8.93,"thin":true},{"name":"Jeremiyah Love","jpRank":16,"jpValue":27.79,"marketValue":19.22,"dollarDelta":-8.57,"thin":true},{"name":"Josh Jacobs","jpRank":17,"jpValue":27.08,"marketValue":19.41,"dollarDelta":-7.67,"thin":true},{"name":"Cam Skattebo","jpRank":18,"jpValue":25.16,"marketValue":19.03,"dollarDelta":-6.13,"thin":true},{"name":"Quinshon Judkins","jpRank":19,"jpValue":25.09,"marketValue":19.03,"dollarDelta":-6.06,"thin":true},{"name":"Bucky Irving","jpRank":20,"jpValue":24.86,"marketValue":19.41,"dollarDelta":-5.45,"thin":true},{"name":"Jadarian Price","jpRank":21,"jpValue":18.75,"marketValue":19.6,"dollarDelta":0.85,"thin":true},{"name":"Bhayshul Tuten","jpRank":22,"jpValue":18.19,"marketValue":19.41,"dollarDelta":1.22,"thin":true},{"name":"Rhamondre Stevenson","jpRank":23,"jpValue":16.79,"marketValue":19.41,"dollarDelta":2.62,"thin":true},{"name":"TreVeyon Henderson","jpRank":24,"jpValue":16.47,"marketValue":19.41,"dollarDelta":2.94,"thin":true},{"name":"Jaylen Warren","jpRank":25,"jpValue":16.17,"marketValue":19.41,"dollarDelta":3.24,"thin":true},{"name":"J.K. Dobbins","jpRank":26,"jpValue":14.42,"marketValue":19.03,"dollarDelta":4.61,"thin":true},{"name":"Tony Pollard","jpRank":27,"jpValue":14.06,"marketValue":19.03,"dollarDelta":4.97,"thin":true},{"name":"Jordan Mason","jpRank":28,"jpValue":13.28,"marketValue":19.41,"dollarDelta":6.13,"thin":true},{"name":"Kyle Monangai","jpRank":29,"jpValue":13.08,"marketValue":19.03,"dollarDelta":5.95,"thin":true},{"name":"Rico Dowdle","jpRank":30,"jpValue":12.76,"marketValue":19.41,"dollarDelta":6.65,"thin":true},{"name":"Jonathon Brooks","jpRank":31,"jpValue":12.15,"marketValue":19.03,"dollarDelta":6.88,"thin":true},{"name":"Chuba Hubbard","jpRank":32,"jpValue":12,"marketValue":19.41,"dollarDelta":7.41,"thin":true},{"name":"Kenny Gainwell","jpRank":33,"jpValue":10.83,"marketValue":19.41,"dollarDelta":8.58,"thin":true},{"name":"Blake Corum","jpRank":34,"jpValue":10.68,"marketValue":19.03,"dollarDelta":8.35,"thin":true},{"name":"RJ Harvey","jpRank":35,"jpValue":10.36,"marketValue":19.03,"dollarDelta":8.67,"thin":true},{"name":"Jacory Croskey-Merritt","jpRank":36,"jpValue":9.32,"marketValue":19.03,"dollarDelta":9.71,"thin":true},{"name":"Rachaad White","jpRank":37,"jpValue":8.26,"marketValue":18.46,"dollarDelta":10.2,"thin":true},{"name":"Woody Marks","jpRank":38,"jpValue":2.92,"marketValue":19.41,"dollarDelta":16.49,"thin":true},{"name":"Zach Charbonnet","jpRank":39,"jpValue":1.09,"marketValue":17.89,"dollarDelta":16.8,"thin":true},{"name":"Tank Bigsby","jpRank":40,"jpValue":1.02,"marketValue":20.36,"dollarDelta":19.34,"thin":true},{"name":"Alvin Kamara","jpRank":41,"jpValue":1,"marketValue":18.27,"dollarDelta":17.27,"thin":true},{"name":"Isiah Pacheco","jpRank":42,"jpValue":1,"marketValue":19.41,"dollarDelta":18.41,"thin":true},{"name":"Ray Davis","jpRank":43,"jpValue":1,"marketValue":19.79,"dollarDelta":18.79,"thin":true}],"WR":[{"name":"Puka Nacua","jpRank":1,"jpValue":46.17,"marketValue":85.58,"dollarDelta":39.41,"thin":false},{"name":"Ja'Marr Chase","jpRank":2,"jpValue":45.39,"marketValue":46.68,"dollarDelta":1.29,"thin":true},{"name":"Jaxon Smith-Njigba","jpRank":3,"jpValue":38.39,"marketValue":71.97,"dollarDelta":33.58,"thin":false},{"name":"Amon-Ra St. Brown","jpRank":4,"jpValue":35.92,"marketValue":60.3,"dollarDelta":24.38,"thin":false},{"name":"CeeDee Lamb","jpRank":5,"jpValue":34.29,"marketValue":25.29,"dollarDelta":-9,"thin":false},{"name":"Nico Collins","jpRank":6,"jpValue":33.47,"marketValue":13.81,"dollarDelta":-19.66,"thin":true},{"name":"A.J. Brown","jpRank":7,"jpValue":29.47,"marketValue":13.81,"dollarDelta":-15.66,"thin":true},{"name":"George Pickens","jpRank":8,"jpValue":28.82,"marketValue":13.81,"dollarDelta":-15.01,"thin":true},{"name":"Justin Jefferson","jpRank":9,"jpValue":28.72,"marketValue":25.29,"dollarDelta":-3.43,"thin":false},{"name":"Drake London","jpRank":10,"jpValue":28.66,"marketValue":13.81,"dollarDelta":-14.85,"thin":true},{"name":"Chris Olave","jpRank":11,"jpValue":25.3,"marketValue":13.81,"dollarDelta":-11.49,"thin":true},{"name":"DeVonta Smith","jpRank":12,"jpValue":23.45,"marketValue":13.81,"dollarDelta":-9.64,"thin":true},{"name":"Zay Flowers","jpRank":13,"jpValue":22.96,"marketValue":13.81,"dollarDelta":-9.15,"thin":true},{"name":"Ladd McConkey","jpRank":14,"jpValue":22.96,"marketValue":13.81,"dollarDelta":-9.15,"thin":true},{"name":"Mike Evans","jpRank":15,"jpValue":22.8,"marketValue":13.81,"dollarDelta":-8.99,"thin":true},{"name":"Tee Higgins","jpRank":16,"jpValue":22.7,"marketValue":13.81,"dollarDelta":-8.89,"thin":true},{"name":"Malik Nabers","jpRank":17,"jpValue":22.51,"marketValue":13.81,"dollarDelta":-8.7,"thin":true},{"name":"Emeka Egbuka","jpRank":18,"jpValue":22.24,"marketValue":13.81,"dollarDelta":-8.43,"thin":true},{"name":"Rashee Rice","jpRank":19,"jpValue":22.18,"marketValue":13.81,"dollarDelta":-8.37,"thin":true},{"name":"Tetairoa McMillan","jpRank":20,"jpValue":21.92,"marketValue":13.81,"dollarDelta":-8.11,"thin":true},{"name":"Garrett Wilson","jpRank":21,"jpValue":21.56,"marketValue":13.81,"dollarDelta":-7.75,"thin":true},{"name":"Jaylen Waddle","jpRank":22,"jpValue":21.27,"marketValue":13.81,"dollarDelta":-7.46,"thin":true},{"name":"Terry McLaurin","jpRank":23,"jpValue":19.41,"marketValue":13.81,"dollarDelta":-5.6,"thin":true},{"name":"Parker Washington","jpRank":24,"jpValue":19.28,"marketValue":14,"dollarDelta":-5.28,"thin":true},{"name":"Jameson Williams","jpRank":25,"jpValue":19.22,"marketValue":13.81,"dollarDelta":-5.41,"thin":true},{"name":"Christian Watson","jpRank":26,"jpValue":19.19,"marketValue":14,"dollarDelta":-5.19,"thin":true},{"name":"Rome Odunze","jpRank":27,"jpValue":18.47,"marketValue":13.81,"dollarDelta":-4.66,"thin":true},{"name":"Jayden Reed","jpRank":28,"jpValue":14.79,"marketValue":14,"dollarDelta":-0.79,"thin":true},{"name":"Davante Adams","jpRank":29,"jpValue":14.27,"marketValue":13.81,"dollarDelta":-0.46,"thin":true},{"name":"DK Metcalf","jpRank":30,"jpValue":11.44,"marketValue":13.81,"dollarDelta":2.37,"thin":true},{"name":"Alec Pierce","jpRank":31,"jpValue":10.98,"marketValue":13.81,"dollarDelta":2.83,"thin":true},{"name":"DJ Moore","jpRank":32,"jpValue":9.88,"marketValue":13.81,"dollarDelta":3.93,"thin":true},{"name":"Carnell Tate","jpRank":33,"jpValue":9,"marketValue":13.81,"dollarDelta":4.81,"thin":true},{"name":"Courtland Sutton","jpRank":34,"jpValue":9,"marketValue":13.81,"dollarDelta":4.81,"thin":true},{"name":"Jordan Addison","jpRank":35,"jpValue":7.99,"marketValue":14,"dollarDelta":6.01,"thin":true},{"name":"Matthew Golden","jpRank":36,"jpValue":7.79,"marketValue":14.2,"dollarDelta":6.41,"thin":true},{"name":"Makai Lemon","jpRank":37,"jpValue":7.42,"marketValue":14,"dollarDelta":6.58,"thin":true},{"name":"Jakobi Meyers","jpRank":38,"jpValue":7.24,"marketValue":14,"dollarDelta":6.76,"thin":true},{"name":"Josh Downs","jpRank":39,"jpValue":7.24,"marketValue":14,"dollarDelta":6.76,"thin":true},{"name":"Michael Wilson","jpRank":40,"jpValue":7.13,"marketValue":14,"dollarDelta":6.87,"thin":true},{"name":"Wan'Dale Robinson","jpRank":41,"jpValue":6.94,"marketValue":14,"dollarDelta":7.06,"thin":true},{"name":"Khalil Shakir","jpRank":42,"jpValue":6.94,"marketValue":14,"dollarDelta":7.06,"thin":true},{"name":"Quentin Johnston","jpRank":43,"jpValue":6.89,"marketValue":14,"dollarDelta":7.11,"thin":true},{"name":"Xavier Worthy","jpRank":44,"jpValue":6.76,"marketValue":14,"dollarDelta":7.24,"thin":true},{"name":"Jordyn Tyson","jpRank":45,"jpValue":1,"marketValue":13.81,"dollarDelta":12.81,"thin":true}],"TE":[{"name":"Brock Bowers","jpRank":1,"jpValue":25.9,"marketValue":14.73,"dollarDelta":-11.17,"thin":false},{"name":"Trey McBride","jpRank":2,"jpValue":20.82,"marketValue":19.83,"dollarDelta":-0.99,"thin":false},{"name":"Colston Loveland","jpRank":3,"jpValue":16.43,"marketValue":8.15,"dollarDelta":-8.28,"thin":false},{"name":"Tyler Warren","jpRank":4,"jpValue":11.94,"marketValue":7.79,"dollarDelta":-4.15,"thin":false},{"name":"Sam LaPorta","jpRank":5,"jpValue":11.58,"marketValue":3.9,"dollarDelta":-7.68,"thin":false},{"name":"Tucker Kraft","jpRank":6,"jpValue":5.85,"marketValue":4.6,"dollarDelta":-1.25,"thin":false},{"name":"George Kittle","jpRank":7,"jpValue":5,"marketValue":2.51,"dollarDelta":-2.49,"thin":true},{"name":"Travis Kelce","jpRank":8,"jpValue":4.38,"marketValue":2.51,"dollarDelta":-1.87,"thin":true},{"name":"Mark Andrews","jpRank":9,"jpValue":3.11,"marketValue":2.51,"dollarDelta":-0.6,"thin":true},{"name":"Dalton Kincaid","jpRank":10,"jpValue":2.5,"marketValue":5.45,"dollarDelta":2.95,"thin":true},{"name":"Brenton Strange","jpRank":11,"jpValue":2.34,"marketValue":2.51,"dollarDelta":0.17,"thin":true},{"name":"Isaiah Likely","jpRank":12,"jpValue":1.87,"marketValue":2.51,"dollarDelta":0.64,"thin":true},{"name":"Jake Ferguson","jpRank":13,"jpValue":1.65,"marketValue":2.51,"dollarDelta":0.86,"thin":true},{"name":"Hunter Henry","jpRank":14,"jpValue":1.61,"marketValue":2.51,"dollarDelta":0.9,"thin":true},{"name":"T.J. Hockenson","jpRank":15,"jpValue":1.25,"marketValue":2.51,"dollarDelta":1.26,"thin":true}]};
+  const DATA = {"QB":[{"name":"Josh Allen","jpRank":1,"jpValue":25.51,"prob":0.29,"real":true},{"name":"Lamar Jackson","jpRank":2,"jpValue":14.61,"prob":0.135,"real":true},{"name":"Drake Maye","jpRank":3,"jpValue":11.92,"prob":0.095,"real":true},{"name":"Jalen Hurts","jpRank":4,"jpValue":9.57,"prob":0.075,"real":true},{"name":"Jayden Daniels","jpRank":5,"jpValue":8.66,"prob":0.045,"real":false},{"name":"Joe Burrow","jpRank":6,"jpValue":7.48,"prob":0.095,"real":true},{"name":"Trevor Lawrence","jpRank":7,"jpValue":5.95,"prob":0.0355,"real":false},{"name":"Dak Prescott","jpRank":8,"jpValue":5.78,"prob":0.0355,"real":false},{"name":"Brock Purdy","jpRank":9,"jpValue":5.56,"prob":0.0355,"real":false},{"name":"Caleb Williams","jpRank":10,"jpValue":5.28,"prob":0.08,"real":true},{"name":"Justin Herbert","jpRank":11,"jpValue":4.02,"prob":0.0355,"real":false},{"name":"Jaxson Dart","jpRank":12,"jpValue":3.72,"prob":0.0355,"real":false},{"name":"Bo Nix","jpRank":13,"jpValue":3.6,"prob":0.0355,"real":false},{"name":"Patrick Mahomes","jpRank":14,"jpValue":2.28,"prob":0.0355,"real":false},{"name":"Jared Goff","jpRank":15,"jpValue":2.11,"prob":0.0355,"real":false}],"RB":[{"name":"Jahmyr Gibbs","jpRank":1,"jpValue":64.12,"prob":0.32,"real":true},{"name":"Bijan Robinson","jpRank":2,"jpValue":61.84,"prob":0.175,"real":true},{"name":"Christian McCaffrey","jpRank":3,"jpValue":49.83,"prob":0.0635,"real":true},{"name":"Jonathan Taylor","jpRank":4,"jpValue":49.28,"prob":0.035,"real":false},{"name":"Derrick Henry","jpRank":5,"jpValue":44.1,"prob":0.05,"real":false},{"name":"De'Von Achane","jpRank":6,"jpValue":41.33,"prob":0.045,"real":true},{"name":"Saquon Barkley","jpRank":7,"jpValue":40.78,"prob":0.0505,"real":false},{"name":"Chase Brown","jpRank":8,"jpValue":40.29,"prob":0.051,"real":false},{"name":"Omarion Hampton","jpRank":9,"jpValue":37.75,"prob":0.052,"real":false},{"name":"Ashton Jeanty","jpRank":10,"jpValue":35.31,"prob":0.0525,"real":false},{"name":"Breece Hall","jpRank":11,"jpValue":29.16,"prob":0.05,"real":false},{"name":"Kyren Williams","jpRank":12,"jpValue":29,"prob":0.05,"real":false},{"name":"David Montgomery","jpRank":13,"jpValue":28.38,"prob":0.051,"real":false},{"name":"D'Andre Swift","jpRank":14,"jpValue":28.18,"prob":0.05,"real":false},{"name":"Javonte Williams","jpRank":15,"jpValue":27.96,"prob":0.05,"real":false},{"name":"Jeremiyah Love","jpRank":16,"jpValue":27.79,"prob":0.0505,"real":false},{"name":"Josh Jacobs","jpRank":17,"jpValue":27.08,"prob":0.051,"real":false},{"name":"Cam Skattebo","jpRank":18,"jpValue":25.16,"prob":0.05,"real":false},{"name":"Quinshon Judkins","jpRank":19,"jpValue":25.09,"prob":0.05,"real":false},{"name":"Bucky Irving","jpRank":20,"jpValue":24.86,"prob":0.051,"real":false},{"name":"Jadarian Price","jpRank":21,"jpValue":18.75,"prob":0.0515,"real":false},{"name":"Bhayshul Tuten","jpRank":22,"jpValue":18.19,"prob":0.051,"real":false},{"name":"Rhamondre Stevenson","jpRank":23,"jpValue":16.79,"prob":0.051,"real":false},{"name":"TreVeyon Henderson","jpRank":24,"jpValue":16.47,"prob":0.051,"real":false},{"name":"Jaylen Warren","jpRank":25,"jpValue":16.17,"prob":0.051,"real":false},{"name":"J.K. Dobbins","jpRank":26,"jpValue":14.42,"prob":0.05,"real":false},{"name":"Tony Pollard","jpRank":27,"jpValue":14.06,"prob":0.05,"real":false},{"name":"Jordan Mason","jpRank":28,"jpValue":13.28,"prob":0.051,"real":false},{"name":"Kyle Monangai","jpRank":29,"jpValue":13.08,"prob":0.05,"real":false},{"name":"Rico Dowdle","jpRank":30,"jpValue":12.76,"prob":0.051,"real":false},{"name":"Jonathon Brooks","jpRank":31,"jpValue":12.15,"prob":0.05,"real":false},{"name":"Chuba Hubbard","jpRank":32,"jpValue":12,"prob":0.051,"real":false},{"name":"Kenny Gainwell","jpRank":33,"jpValue":10.83,"prob":0.051,"real":false},{"name":"Blake Corum","jpRank":34,"jpValue":10.68,"prob":0.05,"real":false},{"name":"RJ Harvey","jpRank":35,"jpValue":10.36,"prob":0.05,"real":false},{"name":"Jacory Croskey-Merritt","jpRank":36,"jpValue":9.32,"prob":0.05,"real":false},{"name":"Rachaad White","jpRank":37,"jpValue":8.26,"prob":0.0485,"real":false},{"name":"Woody Marks","jpRank":38,"jpValue":2.92,"prob":0.051,"real":false},{"name":"Zach Charbonnet","jpRank":39,"jpValue":1.09,"prob":0.047,"real":false},{"name":"Tank Bigsby","jpRank":40,"jpValue":1.02,"prob":0.0525,"real":false},{"name":"Alvin Kamara","jpRank":41,"jpValue":1,"prob":0.048,"real":false},{"name":"Isiah Pacheco","jpRank":42,"jpValue":1,"prob":0.051,"real":false},{"name":"Ray Davis","jpRank":43,"jpValue":1,"prob":0.051,"real":false}],"WR":[{"name":"Puka Nacua","jpRank":1,"jpValue":46.17,"prob":0.22,"real":true},{"name":"Ja'Marr Chase","jpRank":2,"jpValue":45.39,"prob":0.12,"real":false},{"name":"Jaxon Smith-Njigba","jpRank":3,"jpValue":38.39,"prob":0.185,"real":true},{"name":"Amon-Ra St. Brown","jpRank":4,"jpValue":35.92,"prob":0.155,"real":true},{"name":"CeeDee Lamb","jpRank":5,"jpValue":34.29,"prob":0.065,"real":true},{"name":"Nico Collins","jpRank":6,"jpValue":33.47,"prob":0.0355,"real":false},{"name":"A.J. Brown","jpRank":7,"jpValue":29.47,"prob":0.0355,"real":false},{"name":"George Pickens","jpRank":8,"jpValue":28.82,"prob":0.0355,"real":false},{"name":"Justin Jefferson","jpRank":9,"jpValue":28.72,"prob":0.065,"real":true},{"name":"Drake London","jpRank":10,"jpValue":28.66,"prob":0.0355,"real":false},{"name":"Chris Olave","jpRank":11,"jpValue":25.3,"prob":0.0355,"real":false},{"name":"DeVonta Smith","jpRank":12,"jpValue":23.45,"prob":0.0355,"real":false},{"name":"Zay Flowers","jpRank":13,"jpValue":22.96,"prob":0.0355,"real":false},{"name":"Ladd McConkey","jpRank":14,"jpValue":22.96,"prob":0.0355,"real":false},{"name":"Mike Evans","jpRank":15,"jpValue":22.8,"prob":0.0355,"real":false},{"name":"Tee Higgins","jpRank":16,"jpValue":22.7,"prob":0.0355,"real":false},{"name":"Malik Nabers","jpRank":17,"jpValue":22.51,"prob":0.0355,"real":false},{"name":"Emeka Egbuka","jpRank":18,"jpValue":22.24,"prob":0.0355,"real":false},{"name":"Rashee Rice","jpRank":19,"jpValue":22.18,"prob":0.0355,"real":false},{"name":"Tetairoa McMillan","jpRank":20,"jpValue":21.92,"prob":0.0355,"real":false},{"name":"Garrett Wilson","jpRank":21,"jpValue":21.56,"prob":0.0355,"real":false},{"name":"Jaylen Waddle","jpRank":22,"jpValue":21.27,"prob":0.0355,"real":false},{"name":"Terry McLaurin","jpRank":23,"jpValue":19.41,"prob":0.0355,"real":false},{"name":"Parker Washington","jpRank":24,"jpValue":19.28,"prob":0.036,"real":false},{"name":"Jameson Williams","jpRank":25,"jpValue":19.22,"prob":0.0355,"real":false},{"name":"Christian Watson","jpRank":26,"jpValue":19.19,"prob":0.036,"real":false},{"name":"Rome Odunze","jpRank":27,"jpValue":18.47,"prob":0.0355,"real":false},{"name":"Jayden Reed","jpRank":28,"jpValue":14.79,"prob":0.036,"real":false},{"name":"Davante Adams","jpRank":29,"jpValue":14.27,"prob":0.0355,"real":false},{"name":"DK Metcalf","jpRank":30,"jpValue":11.44,"prob":0.0355,"real":false},{"name":"Alec Pierce","jpRank":31,"jpValue":10.98,"prob":0.0355,"real":false},{"name":"DJ Moore","jpRank":32,"jpValue":9.88,"prob":0.0355,"real":false},{"name":"Carnell Tate","jpRank":33,"jpValue":9,"prob":0.0355,"real":false},{"name":"Courtland Sutton","jpRank":34,"jpValue":9,"prob":0.0355,"real":false},{"name":"Jordan Addison","jpRank":35,"jpValue":7.99,"prob":0.036,"real":false},{"name":"Matthew Golden","jpRank":36,"jpValue":7.79,"prob":0.0365,"real":false},{"name":"Makai Lemon","jpRank":37,"jpValue":7.42,"prob":0.036,"real":false},{"name":"Jakobi Meyers","jpRank":38,"jpValue":7.24,"prob":0.036,"real":false},{"name":"Josh Downs","jpRank":39,"jpValue":7.24,"prob":0.036,"real":false},{"name":"Michael Wilson","jpRank":40,"jpValue":7.13,"prob":0.036,"real":false},{"name":"Wan'Dale Robinson","jpRank":41,"jpValue":6.94,"prob":0.036,"real":false},{"name":"Khalil Shakir","jpRank":42,"jpValue":6.94,"prob":0.036,"real":false},{"name":"Quentin Johnston","jpRank":43,"jpValue":6.89,"prob":0.036,"real":false},{"name":"Xavier Worthy","jpRank":44,"jpValue":6.76,"prob":0.036,"real":false},{"name":"Jordyn Tyson","jpRank":45,"jpValue":1,"prob":0.0355,"real":false}],"TE":[{"name":"Brock Bowers","jpRank":1,"jpValue":25.9,"prob":0.208,"real":true},{"name":"Trey McBride","jpRank":2,"jpValue":20.82,"prob":0.28,"real":true},{"name":"Colston Loveland","jpRank":3,"jpValue":16.43,"prob":0.115,"real":true},{"name":"Tyler Warren","jpRank":4,"jpValue":11.94,"prob":0.11,"real":true},{"name":"Sam LaPorta","jpRank":5,"jpValue":11.58,"prob":0.055,"real":true},{"name":"Tucker Kraft","jpRank":6,"jpValue":5.85,"prob":0.07,"real":true},{"name":"George Kittle","jpRank":7,"jpValue":5,"prob":0.0355,"real":false},{"name":"Travis Kelce","jpRank":8,"jpValue":4.38,"prob":0.0355,"real":false},{"name":"Mark Andrews","jpRank":9,"jpValue":3.11,"prob":0.0355,"real":false},{"name":"Dalton Kincaid","jpRank":10,"jpValue":2.5,"prob":0.077,"real":false},{"name":"Brenton Strange","jpRank":11,"jpValue":2.34,"prob":0.0355,"real":false},{"name":"Isaiah Likely","jpRank":12,"jpValue":1.87,"prob":0.0355,"real":false},{"name":"Jake Ferguson","jpRank":13,"jpValue":1.65,"prob":0.0355,"real":false},{"name":"Hunter Henry","jpRank":14,"jpValue":1.61,"prob":0.0355,"real":false},{"name":"T.J. Hockenson","jpRank":15,"jpValue":1.25,"prob":0.0355,"real":false}]};
+  const STARTER_RATE = 0.32548664793045035;
 
   function fmt(n) { return (n < 0 ? "&minus;$" : "$") + Math.abs(n).toFixed(2).replace(/\.00$/, ""); }
   function fmtDelta(n) {
@@ -349,19 +390,44 @@
     return sign + "$" + Math.abs(n).toFixed(2).replace(/\.00$/, "");
   }
 
-  function renderTable(pos, rows) {
+  function computeCorrected(rows, beta) {
+    const real = rows.filter(r => r.real).sort((a, b) => b.prob - a.prob);
+    if (!real.length) return new Map();
+    const anchor = real[0];
+    const out = new Map();
+    for (const r of real) {
+      const corrected = anchor.jpValue + beta * Math.log(r.prob / anchor.prob) * STARTER_RATE;
+      out.set(r.name, Math.max(1, corrected));
+    }
+    return out;
+  }
+
+  function renderTable(pos, rows, beta) {
     const tbody = document.getElementById(pos.toLowerCase() + "-body");
-    const maxVal = Math.max(...rows.map(r => Math.max(r.jpValue, r.marketValue)));
+    const corrected = computeCorrected(rows, beta);
+    const maxVal = Math.max(...rows.map(r => Math.max(r.jpValue, corrected.get(r.name) || 0)));
     tbody.innerHTML = rows.map(r => {
-      const deltaClass = r.dollarDelta > 0 ? "up" : r.dollarDelta < 0 ? "down" : "";
+      const mkt = corrected.get(r.name);
       const jpPct = Math.max(2, (r.jpValue / maxVal) * 100);
-      const mktPct = Math.max(2, (r.marketValue / maxVal) * 100);
-      return `<tr class="${r.thin ? "thin" : ""}">
+      if (mkt == null) {
+        return `<tr class="no-signal">
+          <td class="rank">${r.jpRank}</td>
+          <td class="player">${r.name}</td>
+          <td class="num jp">${fmt(r.jpValue)}</td>
+          <td class="num dash">&mdash;</td>
+          <td class="num dash">&mdash;</td>
+          <td><span class="no-signal-note">never traded</span></td>
+        </tr>`;
+      }
+      const delta = mkt - r.jpValue;
+      const deltaClass = delta > 0.005 ? "up" : delta < -0.005 ? "down" : "";
+      const mktPct = Math.max(2, (mkt / maxVal) * 100);
+      return `<tr>
         <td class="rank">${r.jpRank}</td>
-        <td class="player">${r.name}${r.thin ? '<span class="thin-tag">thin</span>' : ""}</td>
+        <td class="player">${r.name}</td>
         <td class="num jp">${fmt(r.jpValue)}</td>
-        <td class="num mkt">${fmt(r.marketValue)}</td>
-        <td class="num delta ${deltaClass}">${fmtDelta(r.dollarDelta)}</td>
+        <td class="num mkt">${fmt(mkt)}</td>
+        <td class="num delta ${deltaClass}">${fmtDelta(delta)}</td>
         <td>
           <div class="bars">
             <div class="bar-track"><div class="bar-fill jp" style="width:${jpPct}%"></div></div>
@@ -372,9 +438,19 @@
     }).join("");
   }
 
-  for (const pos of ["QB", "RB", "WR", "TE"]) {
-    renderTable(pos, DATA[pos]);
+  function renderAll(beta) {
+    for (const pos of ["QB", "RB", "WR", "TE"]) renderTable(pos, DATA[pos], beta);
   }
+
+  const slider = document.getElementById("beta-slider");
+  const readout = document.getElementById("beta-readout");
+  slider.addEventListener("input", () => {
+    const beta = Number(slider.value);
+    readout.textContent = "β = " + beta + " pts";
+    renderAll(beta);
+  });
+
+  renderAll(Number(slider.value));
 </script>
 </body>
 </html>
