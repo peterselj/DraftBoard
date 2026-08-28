@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vegas Prices the Draft Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,600;0,8..60,700;1,8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #eef1ec;
+    --surface: #ffffff;
+    --surface-2: #f5f7f2;
+    --ink: #1c2420;
+    --ink-muted: #5b665e;
+    --ink-faint: #8b978d;
+    --border: #d9ddd2;
+    --border-soft: #e6e9e0;
+    --accent: #2c5f4f;
+    --accent-soft: #dce8e2;
+    --market: #9c6b1f;
+    --market-soft: #f0e2c8;
+    --up: #1f7a4c;
+    --down: #b3432f;
+    --warn-bg: #fbf3df;
+    --warn-border: #e2c88a;
+    --warn-ink: #6b5316;
+    --shadow: 0 1px 2px rgba(28,36,32,0.06), 0 8px 24px -12px rgba(28,36,32,0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10140f; --surface: #171d16; --surface-2: #1e251c;
+      --ink: #e8ece4; --ink-muted: #a2ac9c; --ink-faint: #6d766a;
+      --border: #2a332a; --border-soft: #232b21;
+      --accent: #79c0a2; --accent-soft: #1e332a;
+      --market: #e0ac52; --market-soft: #372c17;
+      --up: #5cb886; --down: #e17a61;
+      --warn-bg: #2c260f; --warn-border: #574a1c; --warn-ink: #e2c988;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10140f; --surface: #171d16; --surface-2: #1e251c;
+    --ink: #e8ece4; --ink-muted: #a2ac9c; --ink-faint: #6d766a;
+    --border: #2a332a; --border-soft: #232b21;
+    --accent: #79c0a2; --accent-soft: #1e332a;
+    --market: #e0ac52; --market-soft: #372c17;
+    --up: #5cb886; --down: #e17a61;
+    --warn-bg: #2c260f; --warn-border: #574a1c; --warn-ink: #e2c988;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-soft); }
+
+  .page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  header.top { display: flex; flex-direction: column; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint); }
+  h1 {
+    font-family: "Source Serif 4", Georgia, serif;
+    font-weight: 700; font-style: italic;
+    font-size: clamp(30px, 4.4vw, 42px); line-height: 1.08;
+    margin: 0; text-wrap: balance; color: var(--ink);
+  }
+  .dek { font-size: 16px; color: var(--ink-muted); max-width: 66ch; margin: 0; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .chip {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; padding: 5px 10px;
+    border-radius: 100px; border: 1px solid var(--border); color: var(--ink-muted); background: var(--surface);
+  }
+  .chip b { color: var(--ink); font-weight: 600; }
+
+  h2 { font-family: "Source Serif 4", Georgia, serif; font-weight: 600; font-size: 23px; margin: 0; color: var(--ink); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .pool-note { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--ink-muted); white-space: nowrap; }
+
+  .findings { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 26px 28px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 18px; }
+  .findings h2 { font-size: 19px; }
+  ol.finding-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  ol.finding-list li { display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: baseline; }
+  .finding-num { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink-faint); padding-top: 2px; }
+  .finding-body b.name { color: var(--ink); font-weight: 600; }
+  .delta { font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+  .delta.up { color: var(--up); }
+  .delta.down { color: var(--down); }
+  .finding-body p { margin: 3px 0 0; color: var(--ink-muted); font-size: 14px; }
+
+  .callout {
+    background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-ink);
+    border-radius: 12px; padding: 16px 20px; font-size: 13.5px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .callout .mark { font-family: "IBM Plex Mono", monospace; font-weight: 600; flex-shrink: 0; }
+  .callout p { margin: 0; line-height: 1.6; }
+  .callout b { font-weight: 600; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; }
+  thead th {
+    text-align: left; font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-faint); font-weight: 500; padding: 12px 14px;
+    border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; background: var(--surface);
+  }
+  thead th.num, tbody td.num { text-align: right; }
+  tbody td { padding: 8px 14px; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: var(--surface-2); }
+  tbody tr.thin { opacity: 0.55; }
+  td.rank { font-family: "IBM Plex Mono", monospace; color: var(--ink-faint); font-size: 12px; }
+  td.player { font-weight: 500; }
+  .thin-tag { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--ink-faint); margin-left: 6px; font-weight: 400; }
+  td.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  td.jp { color: var(--accent); }
+  td.mkt { color: var(--market); }
+  td.delta { font-weight: 600; }
+
+  .bars { display: flex; flex-direction: column; gap: 3px; width: 120px; }
+  .bar-track { position: relative; height: 6px; background: var(--border-soft); border-radius: 3px; overflow: hidden; }
+  .bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+  .bar-fill.jp { background: var(--accent); }
+  .bar-fill.mkt { background: var(--market); }
+
+  .tail-note { padding: 14px 18px; font-size: 13px; color: var(--ink-muted); background: var(--surface-2); border-top: 1px solid var(--border); }
+  .tail-note b { color: var(--ink); }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-muted); align-items: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .swatch.thin-demo { background: var(--ink-faint); opacity: 0.55; }
+
+  section.pos { display: flex; flex-direction: column; gap: 12px; }
+
+  footer.method { border-top: 1px solid var(--border); padding-top: 26px; display: flex; flex-direction: column; gap: 16px; }
+  footer.method h2 { font-size: 19px; }
+  footer.method .col { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+  footer.method h3 { font-family: "IBM Plex Sans", sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin: 0 0 8px; font-weight: 600; }
+  footer.method p, footer.method li { color: var(--ink-muted); font-size: 13.5px; margin: 0 0 6px; }
+  footer.method ul { margin: 0; padding-left: 18px; }
+  code.inline { font-family: "IBM Plex Mono", monospace; background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 4px; padding: 1px 5px; font-size: 12.5px; color: var(--ink); }
+
+  @media (max-width: 560px) {
+    .page { padding: 36px 16px 72px; }
+    .bars { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <div class="eyebrow">Draft Board — companion report, not part of the live auction tool</div>
+    <h1>Does Vegas disagree with the model?</h1>
+    <p class="dek">
+      Polymarket runs a season-long "who leads fantasy points at each position" market for
+      2026&#8211;27 &mdash; a live field of real-money probabilities, priced months before Week&nbsp;1.
+      This reallocates the same JP&nbsp;$ pool our bottoms-up model already assigns to each
+      position, in the market's proportions instead of VORP, to see where real money and the
+      model actually disagree.
+    </p>
+    <div class="meta-row">
+      <span class="chip">Snapshot <b>__SNAPSHOT_DATE__</b></span>
+      <span class="chip">Source <b>Polymarket Gamma API</b> (public, no key)</span>
+      <span class="chip">Baseline <b>JP $</b> · 12-team, $200, default roster</span>
+    </div>
+  </header>
+
+  <div class="findings">
+    <h2>What actually moved</h2>
+    <ol class="finding-list">
+      <li>
+        <span class="finding-num">01</span>
+        <div class="finding-body">
+          <b class="name">Jahmyr Gibbs</b> is the single biggest disagreement in the dataset:
+          JP&nbsp;$64 vs. a market-implied <b>$120</b> &mdash;
+          <span class="delta up">+$56</span>. His own contract is genuinely, currently quoted at
+          21&#162;&ndash;43&#162; (not a stub) &mdash; real money thinks he's a much clearer RB1
+          than our VORP curve credits him for.
+        </div>
+      </li>
+      <li>
+        <span class="finding-num">02</span>
+        <div class="finding-body">
+          The market is more convicted on the very top of the WR pool across the board:
+          <b class="name">Puka Nacua</b> <span class="delta up">+$39</span>,
+          <b class="name">Jaxon Smith-Njigba</b> <span class="delta up">+$34</span>,
+          <b class="name">Amon-Ra&nbsp;St.&nbsp;Brown</b> <span class="delta up">+$24</span>.
+          Our model treats WR1&ndash;WR4 as a fairly even tier; the market sees real separation.
+        </div>
+      </li>
+      <li>
+        <span class="finding-num">03</span>
+        <div class="finding-body">
+          <b class="name">Jonathan Taylor</b> and <b class="name">Derrick Henry</b> go the other
+          way, hard: our #4 and #5 RBs by JP&nbsp;$ get priced by the market near the RB pool's
+          floor &mdash; <span class="delta down">&minus;$36</span> and
+          <span class="delta down">&minus;$25</span>. Bettors are pricing in age/workload
+          regression a season-total projection doesn't see coming.
+        </div>
+      </li>
+      <li>
+        <span class="finding-num">04</span>
+        <div class="finding-body">
+          At QB, the market disagrees with the <em>shape</em> of our model, not just individual
+          names: it spreads value further down the position (<b class="name">Josh Allen</b>
+          <span class="delta down">&minus;$4</span>, <b class="name">Jayden Daniels</b>
+          <span class="delta down">&minus;$5</span>) instead of concentrating it in the top
+          three the way our scarcity math does.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="callout">
+    <span class="mark">&#9888;</span>
+    <p>
+      <b>Read the greyed-out rows as "no signal," not "tied."</b> Below roughly the top 8&ndash;10
+      names per position, Polymarket's quoted price is just the midpoint of a nearly-empty order
+      book (bid near $0.00, ask near $0.10) &mdash; nobody has actually traded there. Summed across
+      a position, these phantom quotes push the field's total implied probability well past 100%,
+      which means they're <em>diluting</em> the studs' true share rather than inflating it. Treat
+      every dimmed row below as filler, and the bold rows above it as the real finding.
+    </p>
+  </div>
+
+  <section class="pos" id="qb">
+    <div class="section-head">
+      <h2>Quarterback</h2>
+      <span class="pool-note">$__QB_POOL__ pool reallocated · Polymarket volume $__QB_VOL__</span>
+    </div>
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--accent)"></i> JP $ (our model)</span>
+      <span><i class="swatch" style="background:var(--market)"></i> Market-implied $</span>
+      <span><i class="swatch thin-demo"></i> thin / no real signal</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>JP Rank</th><th>Player</th><th class="num">JP $</th><th class="num">Market $</th><th class="num">&Delta;</th><th>Relative</th></tr></thead>
+        <tbody id="qb-body"></tbody>
+      </table>
+      <div class="tail-note">Showing the top 15 of 37 matched QBs &mdash; every name past this point sits at the market's exact $2.63 floor.</div>
+    </div>
+  </section>
+
+  <section class="pos" id="rb">
+    <div class="section-head">
+      <h2>Running Back</h2>
+      <span class="pool-note">$__RB_POOL__ pool reallocated · Polymarket volume $__RB_VOL__</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>JP Rank</th><th>Player</th><th class="num">JP $</th><th class="num">Market $</th><th class="num">&Delta;</th><th>Relative</th></tr></thead>
+        <tbody id="rb-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="pos" id="wr">
+    <div class="section-head">
+      <h2>Wide Receiver</h2>
+      <span class="pool-note">$__WR_POOL__ pool reallocated · Polymarket volume $__WR_VOL__</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>JP Rank</th><th>Player</th><th class="num">JP $</th><th class="num">Market $</th><th class="num">&Delta;</th><th>Relative</th></tr></thead>
+        <tbody id="wr-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="pos" id="te">
+    <div class="section-head">
+      <h2>Tight End</h2>
+      <span class="pool-note">$__TE_POOL__ pool reallocated · Polymarket volume $__TE_VOL__</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>JP Rank</th><th>Player</th><th class="num">JP $</th><th class="num">Market $</th><th class="num">&Delta;</th><th>Relative</th></tr></thead>
+        <tbody id="te-body"></tbody>
+      </table>
+      <div class="tail-note">Showing the top 15 of 36 matched TEs &mdash; almost all of the position's $1,410 in Polymarket volume sits on Brock Bowers alone.</div>
+    </div>
+  </section>
+
+  <footer class="method">
+    <h2>Method &amp; caveats</h2>
+    <div class="col">
+      <div>
+        <h3>How the reallocation works</h3>
+        <p>
+          Each Polymarket market is a field of "will X finish #1 in fantasy points at his
+          position" contracts. Treated as a Plackett&ndash;Luce choice model, a player's
+          normalized probability within the field <em>is</em> his relative strength &mdash; no
+          de-vig math needed beyond normalizing named candidates to sum to 1. We then redistribute
+          the <em>same total</em> JP&nbsp;$ our model already assigns to that position's matched
+          players, in the market's proportions instead of VORP/scarcity. That's a fair
+          apples-to-apples comparison of shape, not a claim about the market's absolute dollar
+          value of the position.
+        </p>
+      </div>
+      <div>
+        <h3>Where this breaks down</h3>
+        <ul>
+          <li>These are "leads the league" markets, not yardage/points over-unders &mdash;
+            inherently more top-heavy than an auction-value curve should be.</li>
+          <li>The named field's probabilities sum to well over 100% once thin/unseeded quotes are
+            included &mdash; see the callout above. We don't correct for it here; a tighter cut
+            (real bid required) would sharpen every finding above, not soften it.</li>
+          <li>JP $ here uses generic 12-team/$200/default-roster settings, not this league's
+            actual saved settings.</li>
+          <li>Each market lists 111 candidates; most are named "Player 1"&ndash;"Player 60" or
+            real players outside our own pool (backups, rookies) &mdash; dropped from the
+            reallocation entirely.</li>
+        </ul>
+      </div>
+    </div>
+    <p>
+      Reproduce with <code class="inline">node scripts/prototypes/polymarket-fantasy-values.mjs
+      &amp;&amp; node scripts/prototypes/build-report.mjs</code> &mdash; a standalone script, not
+      wired into the live draft board.
+    </p>
+  </footer>
+
+</div>
+
+<script>
+  const DATA = __DATA__;
+
+  function fmt(n) { return (n < 0 ? "&minus;$" : "$") + Math.abs(n).toFixed(2).replace(/\.00$/, ""); }
+  function fmtDelta(n) {
+    const sign = n >= 0 ? "+" : "&minus;";
+    return sign + "$" + Math.abs(n).toFixed(2).replace(/\.00$/, "");
+  }
+
+  function renderTable(pos, rows) {
+    const tbody = document.getElementById(pos.toLowerCase() + "-body");
+    const maxVal = Math.max(...rows.map(r => Math.max(r.jpValue, r.marketValue)));
+    tbody.innerHTML = rows.map(r => {
+      const deltaClass = r.dollarDelta > 0 ? "up" : r.dollarDelta < 0 ? "down" : "";
+      const jpPct = Math.max(2, (r.jpValue / maxVal) * 100);
+      const mktPct = Math.max(2, (r.marketValue / maxVal) * 100);
+      return `<tr class="${r.thin ? "thin" : ""}">
+        <td class="rank">${r.jpRank}</td>
+        <td class="player">${r.name}${r.thin ? '<span class="thin-tag">thin</span>' : ""}</td>
+        <td class="num jp">${fmt(r.jpValue)}</td>
+        <td class="num mkt">${fmt(r.marketValue)}</td>
+        <td class="num delta ${deltaClass}">${fmtDelta(r.dollarDelta)}</td>
+        <td>
+          <div class="bars">
+            <div class="bar-track"><div class="bar-fill jp" style="width:${jpPct}%"></div></div>
+            <div class="bar-track"><div class="bar-fill mkt" style="width:${mktPct}%"></div></div>
+          </div>
+        </td>
+      </tr>`;
+    }).join("");
+  }
+
+  for (const pos of ["QB", "RB", "WR", "TE"]) {
+    renderTable(pos, DATA[pos]);
+  }
+</script>
+</body>
+</html>
