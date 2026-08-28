@@ -66,6 +66,45 @@ export function parseVerticalBlocks(lines) {
   return rows;
 }
 
+// First Down Studio's season-rankings tables (firstdown.studio) copy out
+// vertically too, but anchored differently from Yahoo's: there's no
+// "TEAM - POS" line to key off — no position column at all, since each
+// position lives on its own page/tab — so every record is keyed off a bare
+// team-code line immediately followed by one line of tab-separated stats
+// with Pts first:
+//
+//   1
+//   Josh Allen
+//   Josh Allen           <- name, doubled — the site's markup copies it twice
+//   BUF                  <- team code, the reliable record marker here
+//   332	3,614	24.8	499	10.7	+600   <- Pts, then the rest of the box score
+//
+// Only Pts (the stat line's first number) is pulled out — see fdvPoints in
+// App.jsx for why the rest of the box score isn't needed (yet).
+const TEAM_CODE = /^[A-Z]{2,4}$/;
+const RANK_LINE = /^\d+\.?$/;
+
+export function parseFirstDownBlocks(lines) {
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!TEAM_CODE.test(lines[i])) continue;
+    const statLine = lines[i + 1];
+    if (!statLine || !statLine.includes("\t")) continue;
+    const pts = parseFloat(statLine.split("\t")[0].trim().replace(/,/g, ""));
+    if (!Number.isFinite(pts)) continue;
+
+    // The name is whichever non-rank, non-team-code line sits closest above
+    // the team code — the nearer of the two duplicated copies when there
+    // are two, robust to there being only one if the site's markup changes.
+    const prev = lines[i - 1];
+    if (prev == null || RANK_LINE.test(prev) || TEAM_CODE.test(prev)) continue;
+    const name = prev;
+
+    rows.push({ name, pos: null, value: Math.round(pts * 10) / 10 });
+  }
+  return rows;
+}
+
 function detectDelimiter(text) {
   const line = text.split(/\r?\n/).find((l) => l.trim()) || "";
   const counts = { "\t": 0, ",": 0, ";": 0, "|": 0 };
@@ -106,12 +145,22 @@ export function parseImport(text) {
   }
 
   if (delimitedLines < lines.length / 2) {
-    const rows = parseVerticalBlocks(lines);
-    if (rows.length > 0) {
+    const yahooRows = parseVerticalBlocks(lines);
+    if (yahooRows.length > 0) {
       return {
-        rows,
+        rows: yahooRows,
         warnings,
         layout: "vertical",
+        delimiter: null,
+        hadHeader: false,
+      };
+    }
+    const fdsRows = parseFirstDownBlocks(lines);
+    if (fdsRows.length > 0) {
+      return {
+        rows: fdsRows,
+        warnings,
+        layout: "firstdown",
         delimiter: null,
         hadHeader: false,
       };

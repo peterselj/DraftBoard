@@ -109,6 +109,11 @@ export default function DataPanel({ meta, importOpen, onImport }) {
                   one-cell-per-line layout
                 </span>
               )}
+              {preview.layout === "firstdown" && (
+                <span style={{ ...styles.previewChip, borderColor: C.gold, color: C.goldLt }}>
+                  First Down Studio layout
+                </span>
+              )}
               {preview.rows.slice(0, 3).map((r, i) => (
                 <span key={i} style={styles.previewChip}>
                   {r.name}{r.pos ? ` · ${r.pos}` : ""} · {field === "fdvPoints" ? `${r.value} pts` : `$${r.value}`}
