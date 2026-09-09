@@ -105,6 +105,90 @@ export function parseFirstDownBlocks(lines) {
   return rows;
 }
 
+// Subvertadown's (subvertadown.com/tap-that-draft) BEER+ board copies out
+// vertically too, anchored by a rank-code cell — "R1", "W23", "T2", "Q5" —
+// that's the first (non-empty) tab cell of each record's stat line, the
+// player's name sitting on the line right above it:
+//
+//   Jahmyr Gibbs
+//   R1			DET-1	6	$71	93%	 $82   <- rank, team-bye, bye, AAV, PS%, BEER+ $
+//
+// Unlike Yahoo's and First Down Studio's paste, the trailing BEER+ $ figure
+// doesn't reliably land on the same line as the rest of the record — a
+// blank tier-color cell in the source table pushes it onto a line of its
+// own for some rows, so a fixed "value is N lines below the name" offset
+// doesn't hold. Instead every dollar figure from the rank-code line up to
+// (not including) the next record's rank-code line is collected, and the
+// last one is taken — the BEER+ $ column is always emitted last, whichever
+// line it ends up on, with AAV always ahead of it.
+const RANK_CODE = /^[QRWT]\d+\.?$/;
+
+export function parseBeerBlocks(lines) {
+  const rows = [];
+  for (let i = 0; i < lines.length; i++) {
+    const firstCell = lines[i].split("\t")[0].trim();
+    if (!RANK_CODE.test(firstCell)) continue;
+    const name = lines[i - 1];
+    if (!name || RANK_CODE.test(name) || MONEY.test(name)) continue;
+
+    const monies = [];
+    for (let j = i; j < lines.length; j++) {
+      if (j > i && RANK_CODE.test(lines[j].split("\t")[0].trim())) break; // next record started
+      for (const c of lines[j].split("\t").map((s) => s.trim()).filter(Boolean)) {
+        if (MONEY.test(c)) monies.push(c);
+      }
+    }
+    if (monies.length === 0) continue;
+    const value = parseFloat(monies[monies.length - 1].replace("$", ""));
+    rows.push({ name, pos: null, value: Math.round(value * 10) / 10 });
+  }
+  return rows;
+}
+
+// Sleeper's site (sleeper.com — the Big Board / auction-values view, not the
+// projections API) copies out vertically too, one cell per line, but
+// anchored differently from Yahoo's: position and team sit on their own
+// lines rather than a combined "TEAM - POS" cell, so a record looks like:
+//
+//   1                    <- rank
+//   Jahmyr Gibbs
+//   RB
+//   DET
+//   Ques                 <- injury flag, sometimes absent (blank cells vanish
+//                           entirely, same as Yahoo's paste)
+//   $82                  <- $PROJ  <- the one we want
+//   6                    <- bye
+//   299.9                <- season pts
+//   ...
+//
+// Anchored on a position line immediately followed by a team-code line —
+// that pairing only ever occurs inside a record, never in the header row
+// ("PLAYER  $PROJ  BYE  PTS  AVG  ATT  YDS  TD  ..."). $PROJ is then the
+// first dollar figure after the team code, skipping over an optional
+// injury-flag word in between.
+export function parseSleeperBlocks(lines) {
+  const rows = [];
+  for (let i = 0; i < lines.length; i++) {
+    const pos = normalizePos(lines[i]);
+    if (!POSITIONS.has(pos)) continue;
+    const team = lines[i + 1];
+    if (!team || !TEAM_CODE.test(team)) continue;
+    const name = lines[i - 1];
+    if (!name || POSITIONS.has(normalizePos(name)) || TEAM_CODE.test(name) ||
+        MONEY.test(name) || /^\d+\.?$/.test(name)) continue;
+
+    let value = null;
+    for (let j = i + 2; j < Math.min(i + 4, lines.length); j++) {
+      if (MONEY.test(lines[j])) { value = parseFloat(lines[j].replace("$", "")); break; }
+      if (!/^[A-Za-z]+$/.test(lines[j])) break; // not a flag word — give up
+    }
+    if (value == null) continue;
+
+    rows.push({ name, pos, value: Math.round(value * 10) / 10 });
+  }
+  return rows;
+}
+
 function detectDelimiter(text) {
   const line = text.split(/\r?\n/).find((l) => l.trim()) || "";
   const counts = { "\t": 0, ",": 0, ";": 0, "|": 0 };
@@ -125,6 +209,17 @@ export function parseImport(text) {
   const delim = detectDelimiter(text);
   let lines = String(text || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (lines.length === 0) return { rows: [], warnings: ["Nothing to import."], delimiter: delim };
+
+  // Subvertadown's BEER+ paste is checked first and unconditionally — unlike
+  // Yahoo's/First Down Studio's, it's anchored by a rank-code cell rather
+  // than a delimiter ratio, and roughly half its lines are tab-delimited
+  // (the stat lines) and half aren't (the name lines), which sits right on
+  // top of the delimitedLines threshold below and can't be trusted to route
+  // it into the right branch.
+  const beerRows = parseBeerBlocks(lines);
+  if (beerRows.length > 0) {
+    return { rows: beerRows, warnings, layout: "beer", delimiter: null, hadHeader: false };
+  }
 
   // Vertical paste (Yahoo and friends) — try it before column detection,
   // since these pastes have almost no delimiters to detect.
@@ -161,6 +256,16 @@ export function parseImport(text) {
         rows: fdsRows,
         warnings,
         layout: "firstdown",
+        delimiter: null,
+        hadHeader: false,
+      };
+    }
+    const sleeperRows = parseSleeperBlocks(lines);
+    if (sleeperRows.length > 0) {
+      return {
+        rows: sleeperRows,
+        warnings,
+        layout: "sleeper",
         delimiter: null,
         hadHeader: false,
       };

@@ -43,7 +43,7 @@ scripts/             — data refresh pipeline (sources/ + refresh.mjs)
 
 ## Value basis (important)
 
-Four prices exist per player, and they answer different questions rather than competing
+Five prices exist per player, and they answer different questions rather than competing
 for the same one:
 
 - **`JP $`** (`p.model` / `baseValueOf`) — our own bottom-up figure, derived from projected
@@ -54,6 +54,10 @@ for the same one:
   league's.
 - **`ETR $`** (`p.etr`) — Establish The Run's values, pasted in by hand. Another external
   reference, same role as FP $.
+- **`BEER+ $`** (`p.beerPlus`) — [Subvertadown](https://subvertadown.com/tap-that-draft/)'s
+  BEER+ values, pasted in by hand. Another external auction-money reference, same role as
+  FP $/ETR $ — not run through our own model the way FDV $ is, since Subvertadown already
+  publishes it as dollars, not points.
 - **`FDV $`** (`fdvValues`, computed) — [First Down Studio](https://www.firstdown.studio/season-rankings)'s
   Vegas-prop-derived fantasy points (`p.fdvPoints`, pasted in by hand), run through *our own*
   bottom-up model rather than trusted as a dollar figure directly — FDS publishes points, not
@@ -63,13 +67,13 @@ for the same one:
 - **`site $`** — published AAV from whichever platform the league drafts on (Settings →
   Drafting on). What's actually on the room's screen — a market-price fact, not a valuation.
 
-**One of FP $ / JP $ / ETR $ / FDV $ is picked as *the basis*** — `Settings → Value basis`, or
-the check icon on a column header in `PlayerTable` — and everything else measures against
-*that* number instead of the four being compared to each other. `App.jsx`'s `basisOf(p)`
-resolves it: `model` and `fdv` always resolve to a computed figure (`fdv` falls back to the
-model value for anyone with no `fdvPoints` pasted); `fp` / `etr` read the pasted field and
-fall back to `model` for anyone missing it, since budget inflation and scarcity need a number
-for every undrafted player to stay calibrated to the whole pot.
+**One of FP $ / JP $ / ETR $ / BEER+ $ / FDV $ is picked as *the basis*** — `Settings → Value
+basis`, or the check icon on a column header in `PlayerTable` — and everything else measures
+against *that* number instead of the five being compared to each other. `App.jsx`'s
+`basisOf(p)` resolves it: `model` and `fdv` always resolve to a computed figure (`fdv` falls
+back to the model value for anyone with no `fdvPoints` pasted); `fp` / `etr` / `beer` read
+the pasted field and fall back to `model` for anyone missing it, since budget inflation and
+scarcity need a number for every undrafted player to stay calibrated to the whole pot.
 
 `siteEdge = basis − site$` is the one comparison that survives: positive means the room's
 published price is *below* whichever source is the basis — a bargain, "green is good".

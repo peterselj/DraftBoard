@@ -15,6 +15,7 @@ const SRC_COLUMNS = [
   { key: "fp", short: "FP", valueKey: "fp", title: "FantasyPros' 0.5 PPR auction calculator, pasted in manually" },
   { key: "model", short: "JP", valueKey: "model", title: "Our own bottom-up value from projections, shaped to this league's exact roster" },
   { key: "etr", short: "ETR", valueKey: "etr", title: "Establish The Run's values, pasted in manually" },
+  { key: "beer", short: "BEER+", valueKey: "beer", title: "Subvertadown's BEER+ values, pasted in manually" },
   { key: "fdv", short: "FDV", valueKey: "fdv", title: "First Down Studio's Vegas-prop-derived points, run through our own bottom-up model" },
 ];
 const SRC_LABEL = Object.fromEntries(SRC_COLUMNS.map((c) => [c.key, c.short]));
@@ -28,7 +29,7 @@ export default function PlayerTable({
   // for it would just be a blank column, so it (and the edge that depends on
   // it) drops out entirely rather than sitting there empty.
   const showSite = platform !== "sleeper";
-  const [visible, setVisible] = useState({ fp: true, model: true, etr: true, fdv: true });
+  const [visible, setVisible] = useState({ fp: true, model: true, etr: true, beer: true, fdv: true });
   const toggleVisible = (key) => setVisible((v) => ({ ...v, [key]: !v[key] }));
 
   // Double-click a source header to use it as the basis, triple-click to
@@ -287,6 +288,7 @@ function marketBreakdown(p, v) {
   if (p.sleeper != null) parts.push(`Sleeper $${p.sleeper}`);
   if (p.fantasypros != null) parts.push(`FantasyPros $${p.fantasypros}`);
   if (p.etr != null) parts.push(`ETR $${p.etr}`);
+  if (p.beerPlus != null) parts.push(`BEER+ $${p.beerPlus}`);
   if (parts.length === 0) return "no published values";
   if (v?.consensus != null && parts.length > 1) {
     parts.push(`consensus $${Math.round(v.consensus)}`);

@@ -59,11 +59,14 @@ Choose which column the values land in:
 
 - `projected` — the standalone sheet value, used as the model value for players
   we have no projections for. Not a market price, so it isn't averaged in below.
-- `yahoo` / `fantasypros` / `etr` — market columns. ESPN and Sleeper auto-refresh
-  via **Refresh** already, so they aren't offered here; NFFC has no source and
-  nobody's used it, so it's dropped from the dropdown too — all three are still
-  valid fields (`MARKET_KEYS` in `App.jsx`), just add them back to
-  `MARKET_FIELDS` in `components/DataPanel.jsx` if a league starts needing them.
+- `yahoo` / `sleeper` / `fantasypros` / `etr` / `beerPlus` — market columns. ESPN
+  auto-refreshes via **Refresh** already, so it isn't offered here; NFFC has no
+  source and nobody's used it, so it's dropped from the dropdown too — it's
+  still a valid field (`MARKET_KEYS` in `App.jsx`), just add it back to
+  `MARKET_FIELDS` in `components/DataPanel.jsx` if a league starts needing it.
+  Sleeper's live refresh (above) only covers projections — it has no auction-
+  value endpoint — so `sleeper` is offered here even though the other live
+  source (ESPN) isn't.
 - `fdvPoints` — [First Down Studio's season rankings](https://www.firstdown.studio/season-rankings)
   (`Pts` column, one position tab at a time), a rival fantasy-points projection
   built off Vegas season-long player props rather than a dollar figure. It
@@ -145,6 +148,40 @@ The importer detects this layout, reads the position out of the `Det - RB`
 line, and takes the first dollar figure after the percentage. Name suffixes are
 ignored on both sides, so Yahoo's "James Cook III" finds "James Cook".
 
+## Getting Sleeper's values — step by step
+
+Sleeper's `Refresh`-button source (above) is projections only — no auction
+values, no `$` column of any kind. If the league drafts on Sleeper, **Site $**
+needs a paste, same as Yahoo/NFFC. Sleeper's site (the Big Board / rankings
+view) publishes a `$PROJ` column — its own auction-value estimate derived from
+the same projections — which is the number to grab.
+
+1. **Open the page** and find the table with a **$PROJ** column (Sleeper's
+   rankings/big-board view).
+2. **Select the table and copy** — click above the "PLAYER" header, drag to
+   the bottom, Ctrl+C.
+3. **Paste it in.** Click **Import**, paste into the box, set *import into* →
+   **sleeper**, and click apply. It lands in `p.sleeper`, which is what
+   **Settings → Drafting on → Sleeper** reads for **Site $**.
+
+**The paste shape is handled.** Sleeper's table copies out vertically too, one
+cell per line, but position and team each get their own line rather than a
+combined `TEAM - POS` cell like Yahoo's:
+
+```
+Jahmyr Gibbs
+RB             <- position
+DET            <- team, right after position — that pairing anchors the record
+Ques           <- injury flag, sometimes absent
+$82            <- $PROJ  <- this is the one taken
+6              <- bye
+299.9          <- season pts
+```
+
+The importer anchors on a position line immediately followed by a team-code
+line — a pairing that only ever happens inside a record — and takes the first
+dollar figure after it, skipping over an optional injury-flag word.
+
 ## Getting FantasyPros' auction values — step by step
 
 FantasyPros' [auction values calculator](https://www.fantasypros.com/nfl/auction-values/calculator.php)
@@ -184,6 +221,29 @@ Same idea as FantasyPros: a paste-in column, no live source. Copy the table
 from ETR's auction values page, click **Import**, paste in, set *import into*
 → **ETR $**, and apply. It lands in `p.etr` and is selectable as the Value
 basis the same way FP $ and JP $ are.
+
+## Getting Subvertadown's BEER+ values — step by step
+
+Same idea as FantasyPros/ETR: a paste-in column, no live source.
+
+1. **Open the draft board** at [subvertadown.com/tap-that-draft](https://subvertadown.com/tap-that-draft/)
+   and set **Value Type** to **BEER+** (not the plain **BEER** or **VOLS** options —
+   they're different value types on the same table).
+2. **Select the table and copy** — click above the "Player" header, drag to
+   the bottom, Ctrl+C.
+3. **Paste it in.** Click **Import**, paste into the box, set *import into* →
+   **BEER+ $**, and click apply. It lands in `p.beerPlus` and is selectable as
+   the Value basis the same way FP $/JP $/ETR $ are.
+
+**The paste shape is handled.** Subvertadown's table copies out vertically, one
+record per name+stat-line pair, anchored by a rank-code cell (`R1`, `W23`,
+`T2`, `Q5`) rather than a `TEAM - POS` line — there's no dedicated position
+column, so rows land purely by name match. The one wrinkle: a blank
+tier-color cell in the source table sometimes pushes the final `$` figure
+onto a line of its own instead of the end of the stat line. The importer
+reads every dollar figure between one record's rank-code line and the next
+and takes the last one, which is always the BEER+ $ column regardless of
+which line it landed on.
 
 ## Telling the board which site you're on
 
