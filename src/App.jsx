@@ -28,12 +28,12 @@ import { PressureGauge, ScarcityChips, TeamStrip } from "./components/Dashboard.
 
 const freshPlayers = seedPlayers;
 
-const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper", "fantasypros", "etr"];
+const MARKET_KEYS = ["yahoo", "espn", "nffc", "sleeper", "fantasypros", "etr", "beerPlus"];
 
 // Which pasted-in field each basis source reads from. "model" and "fdv" have
 // no field — both are always a computed figure, never a pasted number (see
 // fdvValues below for what "computed" means for fdv specifically).
-const BASIS_FIELD = { fp: "fantasypros", etr: "etr" };
+const BASIS_FIELD = { fp: "fantasypros", etr: "etr", beer: "beerPlus" };
 
 // Single-letter position filters, same toggle behavior as clicking the pill.
 // "D" is DEF rather than DST to match POSITIONS in draftMath.js.
@@ -257,6 +257,7 @@ function Board({ room, onLeave }) {
       const model = baseValueOf(p);
       const fp = typeof p.fantasypros === "number" && p.fantasypros > 0 ? p.fantasypros : null;
       const etr = typeof p.etr === "number" && p.etr > 0 ? p.etr : null;
+      const beer = typeof p.beerPlus === "number" && p.beerPlus > 0 ? p.beerPlus : null;
       // Unlike fp/etr, a missing fdvPoints doesn't mean "no FDV $" — it means
       // "this player scores off his normal projection inside the FDV run,"
       // which is still a real (if less-differentiated) VORP figure. Only
@@ -269,6 +270,7 @@ function Board({ room, onLeave }) {
         model,
         fp,
         etr,
+        beer,
         fdv,
         site,
         consensus,
@@ -755,7 +757,7 @@ function Board({ room, onLeave }) {
         <b style={{ color: C.bone }}>h</b> hide drafted · <b style={{ color: C.bone }}>q r w t k d</b> filter
         position · <b style={{ color: C.bone }}>f</b> flex · <b style={{ color: C.bone }}>a</b> all
         <div style={{ marginTop: 4 }}>
-          <b style={{ color: C.bone }}>double-click</b> a FP $/JP $/ETR $/FDV $ header to use it as the Live $ basis ·{" "}
+          <b style={{ color: C.bone }}>double-click</b> a FP $/JP $/ETR $/BEER+ $/FDV $ header to use it as the Live $ basis ·{" "}
           <b style={{ color: C.bone }}>triple-click</b> a header to hide (or restore) that column
         </div>
       </div>

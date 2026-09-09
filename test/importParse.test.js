@@ -206,6 +206,57 @@ test("First Down Studio rows land on the right players by name alone (no positio
   assert.equal(players.find((p) => p.id === "c").fdvPoints, 285);
 });
 
+// What copying Subvertadown's (subvertadown.com/tap-that-draft) BEER+ board
+// actually produces: no "TEAM - POS" line either — records are anchored by a
+// rank-code cell (R1, W6, T21, ...) instead — and, unlike First Down
+// Studio's paste, the final $ figure doesn't reliably land on the same line
+// as the rest of the record: Jefferson's row here has a blank line (a
+// tier-color cell with nothing in it) pushing the $ onto its own line. This
+// is real output pasted from the site, reduced to a few rows.
+const BEER_PASTE = `Position
+Player\tQ\tR\tW\tT\tTm
+B\tAAV
+PS
+$
+Jahmyr Gibbs
+R1\t\t\tDET-1\t6\t$71\t93%\t $82
+Justin Jefferson
+W6\t\tMIN-1\t6\t$49\t66%\t
+
+ $39
+Terrance Ferguson
+T21\tLAR-1\t11\t$1\t-\t
+
+ $1
+`;
+
+test("Subvertadown's BEER+ vertical copy is read correctly, including split-line $ spillover", () => {
+  const { rows, layout } = parseImport(BEER_PASTE);
+  assert.equal(layout, "beer");
+  assert.deepEqual(
+    rows.map((r) => [r.name, r.value]),
+    [
+      ["Jahmyr Gibbs", 82],
+      ["Justin Jefferson", 39],   // $ landed on its own line, after a blank tier-color cell
+      ["Terrance Ferguson", 1],
+    ]
+  );
+});
+
+test("Subvertadown BEER+ rows land on the right players by name alone (no position column)", () => {
+  const beerPool = [
+    { id: "a", name: "Jahmyr Gibbs", pos: "RB", projected: 60 },
+    { id: "b", name: "Justin Jefferson", pos: "WR", projected: 40 },
+    { id: "c", name: "Terrance Ferguson", pos: "TE", projected: 1 },
+  ];
+  const { rows } = parseImport(BEER_PASTE);
+  const { players, matched } = applyImport(beerPool, rows, "beerPlus");
+  assert.equal(matched, 3);
+  assert.equal(players.find((p) => p.id === "a").beerPlus, 82);
+  assert.equal(players.find((p) => p.id === "b").beerPlus, 39);
+  assert.equal(players.find((p) => p.id === "c").beerPlus, 1);
+});
+
 // FantasyPros' auction calculator copies out as several tables stitched
 // together, one per position, each with its own repeated "#  POS  Value"
 // header, and names carry the team (and sometimes an injury badge) right in
@@ -262,6 +313,126 @@ test("a prose blurb above FantasyPros' table doesn't hijack the value column", (
       ["Marvin Harrison Jr.", "WR", 13],
     ]
   );
+});
+
+// What copying Sleeper's Big Board / rankings table actually produces: one
+// cell per line like Yahoo's, but position and team each get their own line
+// instead of a combined "TEAM - POS" cell, and blank cells (an absent injury
+// flag, an empty second status column) vanish entirely — same as Yahoo. This
+// is real output pasted from the site, reduced to a few rows.
+const SLEEPER_PASTE = `PLAYER
+$PROJ
+BYE
+PTS
+AVG
+ATT
+YDS
+TD
+TAR
+YDS
+TD
+ATT
+YDS
+TD
+1
+Jahmyr Gibbs
+RB
+DET
+$82
+6
+299.9
+16.7
+255
+1251
+12
+0
+533
+3
+0
+0
+0
+2
+Bijan Robinson
+RB
+ATL
+$80
+11
+292.9
+16.3
+280
+1372
+9
+0
+537
+3
+0
+0
+0
+3
+Ja'Marr Chase
+WR
+CIN
+Ques
+$63
+6
+256.6
+14.3
+3
+16
+0
+0
+1345
+11
+0
+0
+0
+4
+Christian McCaffrey
+RB
+SF
+Ques
+$62
+8
+256.0
+14.2
+240
+984
+7
+0
+606
+4
+0
+0
+0
+`;
+
+test("Sleeper's vertical copy is read correctly", () => {
+  const { rows, layout } = parseImport(SLEEPER_PASTE);
+  assert.equal(layout, "sleeper");
+  assert.deepEqual(
+    rows.map((r) => [r.name, r.pos, r.value]),
+    [
+      ["Jahmyr Gibbs", "RB", 82],
+      ["Bijan Robinson", "RB", 80],
+      ["Ja'Marr Chase", "WR", 63],
+      ["Christian McCaffrey", "RB", 62],
+    ]
+  );
+});
+
+test("an injury flag between Sleeper's team line and $PROJ doesn't shift the value", () => {
+  const { rows } = parseImport(SLEEPER_PASTE);
+  const gibbs = rows.find((r) => r.name === "Jahmyr Gibbs"); // no flag
+  const chase = rows.find((r) => r.name === "Ja'Marr Chase"); // had "Ques"
+  assert.equal(gibbs.value, 82);
+  assert.equal(chase.value, 63);
+});
+
+test("Sleeper rows land on the right players", () => {
+  const { rows } = parseImport(SLEEPER_PASTE);
+  const { players, matched } = applyImport(pool, rows, "sleeper");
+  assert.equal(matched, 1); // only Ja'Marr Chase is in the small shared pool
+  assert.equal(players.find((p) => p.id === "b").sleeper, 63);
 });
 
 test("FantasyPros rows land on the right players despite the team in the name cell", () => {

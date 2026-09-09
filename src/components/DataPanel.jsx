@@ -3,15 +3,20 @@ import { AlertTriangle, Check } from "lucide-react";
 import { parseImport } from "../lib/importParse.js";
 import { C, F, ui } from "../theme.js";
 
-// ESPN and Sleeper are left out on purpose: both auto-refresh via the
-// Refresh button, so pasting them in by hand is never the normal path.
-// NFFC is left out too — nobody's used it; add it back here (and to
-// MARKET_KEYS in App.jsx) if a league ever starts pricing off it.
+// ESPN is left out on purpose: it auto-refreshes via the Refresh button, so
+// pasting it in by hand is never the normal path. Sleeper's live refresh only
+// covers projections (see lib/sources/sleeper.js) — it publishes no auction
+// values through that feed, so a paste is the only way to get its $PROJ (or
+// site AAV) column onto the board. NFFC is left out too — nobody's used it;
+// add it back here (and to MARKET_KEYS in App.jsx) if a league ever starts
+// pricing off it.
 const MARKET_FIELDS = [
   { key: "projected", short: "sheet", label: "sheet value — feeds the model for anyone with no projections yet, not a market price" },
   { key: "yahoo", short: "yahoo", label: "Yahoo market — Avg $, what drafters actually paid" },
+  { key: "sleeper", short: "sleeper", label: "Sleeper's $PROJ (or site AAV) — Settings → Drafting on → Sleeper reads this for Site $" },
   { key: "fantasypros", short: "FP $", label: "FantasyPros' FP $ — one of the selectable Live $ bases (Settings → Value basis)" },
   { key: "etr", short: "ETR $", label: "Establish The Run's values — another selectable Live $ basis" },
+  { key: "beerPlus", short: "BEER+ $", label: "Subvertadown's BEER+ values (subvertadown.com/tap-that-draft) — another selectable Live $ basis" },
   { key: "fdvPoints", short: "FDV pts", label: "First Down Studio's season-rankings Pts column (firstdown.studio) — Vegas-prop-derived fantasy points, run through our own model to become the FDV $ basis. Paste their half-PPR Pts, not a dollar figure." },
 ];
 
@@ -112,6 +117,16 @@ export default function DataPanel({ meta, importOpen, onImport }) {
               {preview.layout === "firstdown" && (
                 <span style={{ ...styles.previewChip, borderColor: C.gold, color: C.goldLt }}>
                   First Down Studio layout
+                </span>
+              )}
+              {preview.layout === "sleeper" && (
+                <span style={{ ...styles.previewChip, borderColor: C.gold, color: C.goldLt }}>
+                  Sleeper layout
+                </span>
+              )}
+              {preview.layout === "beer" && (
+                <span style={{ ...styles.previewChip, borderColor: C.gold, color: C.goldLt }}>
+                  Subvertadown layout
                 </span>
               )}
               {preview.rows.slice(0, 3).map((r, i) => (

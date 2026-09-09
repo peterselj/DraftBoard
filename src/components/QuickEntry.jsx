@@ -59,6 +59,18 @@ export default function QuickEntry({ players, teams, myTeamId, valueOf, onCommit
         setText(`${chosen.name} `);
         return;
       }
+      // Once a price is on the line, Tab's job shifts to completing the
+      // team fragment instead. Without this, Tab fell through with no
+      // preventDefault and the browser just moved focus off the field
+      // entirely — landing on the player search box, which looked like
+      // "Tab took me back to the player name."
+      if (e.key === "Tab" && parsed.hasPrice) {
+        e.preventDefault();
+        if (parsed.team && !parsed.teamAmbiguous) {
+          setText(`${parsed.playerQuery} ${parsed.price} ${parsed.team.name} `);
+        }
+        return;
+      }
       if (e.key === "Enter") {
         e.preventDefault();
         commit();
